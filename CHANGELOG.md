@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-01-12
+
+### Added
+
+- **Encore Middleware** (`middleware/encore`): New package for Encore.dev tracing integration
+  - `StartSpan()` - Creates OTEL spans correlated with Encore's trace context
+  - `StartSpanWithParent()` - Creates child spans (use only if Encore exports to same backend)
+  - `ConvertTraceID()` / `ConvertSpanID()` - Convert Encore's base32 IDs to OTEL format
+  - Avoids "root span not yet received" errors by creating correlated root spans
+
 ## [0.3.2] - 2026-01-12
 
 ### Fixed
@@ -66,6 +76,7 @@ Initial public release of quiqupgo - a collection of reusable uber/fx modules fo
   - `CLAUDE.md` with project instructions for Claude Code
   - `.serena/` configuration for Serena IDE integration
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.0...v0.3.2
 [0.3.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.3.0

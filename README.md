@@ -28,6 +28,7 @@ go get github.com/quiqupltd/quiqupgo
 | **GORM** | `github.com/quiqupltd/quiqupgo/gormfx` | GORM database with OTEL plugin |
 | **Kafka** | `github.com/quiqupltd/quiqupgo/kafka` | Kafka messaging with tracing |
 | **Middleware** | `github.com/quiqupltd/quiqupgo/middleware` | HTTP tracing middleware (Echo/net/http) |
+| **Encore Middleware** | `github.com/quiqupltd/quiqupgo/middleware/encore` | Encore.dev tracing integration |
 
 ## Quick Start
 
@@ -333,6 +334,47 @@ mux := http.NewServeMux()
 handler := middleware.HTTPTracing(tracerProvider, "my-service")(mux)
 ```
 
+### Encore Middleware
+
+Provides helpers for integrating OpenTelemetry tracing with [Encore.dev](https://encore.dev) applications.
+
+```go
+import "github.com/quiqupltd/quiqupgo/middleware/encore"
+
+// In your Encore application, create middleware that wraps these helpers:
+
+//encore:middleware global target=all
+func TracingMiddleware(req middleware.Request, next middleware.Next) middleware.Response {
+    reqData := req.Data()
+    tp := getTracerProvider() // your tracer provider
+
+    ctx, span := encore.StartSpan(req.Context(), tp, &encore.TraceInfo{
+        TraceID:       reqData.Trace.TraceID,
+        SpanID:        reqData.Trace.SpanID,
+        ParentTraceID: reqData.Trace.ParentTraceID,
+        ParentSpanID:  reqData.Trace.ParentSpanID,
+    }, reqData.Endpoint.Name,
+        trace.WithSpanKind(trace.SpanKindServer),
+    )
+    defer span.End()
+
+    resp := next(req.WithContext(ctx))
+    if resp.Err != nil {
+        span.RecordError(resp.Err)
+    }
+    return resp
+}
+```
+
+**Key Functions:**
+- `StartSpan()` - Creates OTEL spans correlated with Encore's trace context (recommended)
+- `StartSpanWithParent()` - Creates child spans under Encore's span (only if Encore exports to same backend)
+- `ConvertTraceID()` / `ConvertSpanID()` - Convert Encore's base32 IDs to OTEL format
+
+**Why `StartSpan` instead of `StartSpanWithParent`?**
+
+Encore exports its own traces separately. Using `StartSpanWithParent` would create child spans referencing a parent that may not exist in your tracing backend, causing "root span not yet received" errors. `StartSpan` creates correlated but independent root spans that share the same trace ID for correlation.
+
 ## Testing
 
 Each module provides test utilities:
@@ -513,6 +555,7 @@ quiqupgo/
 ├── gormfx/           # GORM database module
 ├── kafka/           # Kafka messaging module
 ├── middleware/       # HTTP middleware
+│   └── encore/       # Encore.dev tracing helpers
 ├── fxutil/           # Shared utilities
 ├── examples/         # Example applications
 │   ├── minimal/      # Logger only
