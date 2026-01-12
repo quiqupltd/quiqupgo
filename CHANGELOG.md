@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-01-12
+
+### Added
+
+- **Developer Tooling**: Added Serena and Claude configuration files
+  - `CLAUDE.md` with project instructions for Claude Code
+  - `.serena/` configuration for Serena IDE integration
+
 ## [0.2.0] - 2026-01-12
 
 ### Added
@@ -74,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integration tests with Postgres, Redpanda, Temporal, OTEL Collector
   - Coverage badge uploaded to GCS
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.2.1
 [0.2.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.2.0
 [0.1.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.1.0
