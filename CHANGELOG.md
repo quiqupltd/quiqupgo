@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-01-12
+
+### Added
+
+- **Temporal Docker Image**: Custom image for CI with dev server baked in
+  - `Dockerfile.temporal` with `server start-dev` command
+  - Published to public GCR for unauthenticated service container pulls
+  - Built with Kaniko for efficient caching
+
+### Changed
+
+- **CI/CD Improvements**:
+  - Switched to Blacksmith runners for faster builds
+  - Added workflow-level concurrency to cancel in-progress runs
+  - Simplified Temporal setup using `temporalio/admin-tools:1.29` dev server
+  - Main workflow now runs on both `main` and `dev` branches
+  - Added race detector to coverage job
+  - Coverage HTML uploaded as artifact
+
+- **Documentation**:
+  - Added Versioning & Releases section to README
+  - Added CHANGELOG.md following Keep a Changelog format
+  - Documented Git Flow branching strategy (`feat/*`, `rel/*`, `hotfix/*`)
+
 ## [0.1.0] - 2025-01-12
 
 ### Added
@@ -50,5 +74,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integration tests with Postgres, Redpanda, Temporal, OTEL Collector
   - Coverage badge uploaded to GCS
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.2.0
 [0.1.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.1.0
