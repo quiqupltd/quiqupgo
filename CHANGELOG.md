@@ -7,39 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.1] - 2026-01-12
+## [0.3.0] - 2026-01-12
 
-### Added
-
-- **Developer Tooling**: Added Serena and Claude configuration files
-  - `CLAUDE.md` with project instructions for Claude Code
-  - `.serena/` configuration for Serena IDE integration
-
-## [0.2.0] - 2026-01-12
-
-### Added
-
-- **Temporal Docker Image**: Custom image for CI with dev server baked in
-  - `Dockerfile.temporal` with `server start-dev` command
-  - Published to public GCR for unauthenticated service container pulls
-  - Built with Kaniko for efficient caching
-
-### Changed
-
-- **CI/CD Improvements**:
-  - Switched to Blacksmith runners for faster builds
-  - Added workflow-level concurrency to cancel in-progress runs
-  - Simplified Temporal setup using `temporalio/admin-tools:1.29` dev server
-  - Main workflow now runs on both `main` and `dev` branches
-  - Added race detector to coverage job
-  - Coverage HTML uploaded as artifact
-
-- **Documentation**:
-  - Added Versioning & Releases section to README
-  - Added CHANGELOG.md following Keep a Changelog format
-  - Documented Git Flow branching strategy (`feat/*`, `rel/*`, `hotfix/*`)
-
-## [0.1.0] - 2025-01-12
+Initial public release of quiqupgo - a collection of reusable uber/fx modules for Go microservices.
 
 ### Added
 
@@ -68,8 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Kafka Module** (`kafka/`): Kafka messaging with tracing
   - Producer and Consumer with OTEL context propagation
+  - TLS and SASL authentication support
   - Configurable consumer groups and topics
-  - Test utilities: `testutil.MockModule()` with in-memory kafka
+  - Test utilities: `testutil.TestModule()` with in-memory kafka
 
 - **Middleware** (`middleware/`): HTTP tracing middleware
   - Echo framework integration
@@ -77,12 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Examples**: Minimal, API service, and worker service examples
 
-- **CI/CD**: GitHub Actions workflows for PR and main branch
+- **CI/CD**: GitHub Actions workflows with Blacksmith runners
   - Lint, test, and coverage checks
   - Integration tests with Postgres, Redpanda, Temporal, OTEL Collector
   - Coverage badge uploaded to GCS
+  - Custom Temporal Docker image for CI
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.2.1...HEAD
-[0.2.1]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.2.1
-[0.2.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.2.0
-[0.1.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.1.0
+- **Developer Tooling**:
+  - `CLAUDE.md` with project instructions for Claude Code
+  - `.serena/` configuration for Serena IDE integration
+
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.3.0
