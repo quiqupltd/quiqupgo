@@ -1,0 +1,52 @@
+name: Temporal Image
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - Dockerfile.temporal
+      - .github/workflows/temporal-image.yml
+  workflow_dispatch:
+
+env:
+  REGISTRY: europe-west1-docker.pkg.dev
+  IMAGE_BASE: europe-west1-docker.pkg.dev/quiqup-infrastructure/public/
+
+jobs:
+  build:
+    name: Build and Push
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Google Cloud Auth
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GOOGLE_GITHUB_KEY }}
+          token_format: access_token
+          export_environment_variables: true
+
+      - name: Artifact Registry Auth
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Kaniko Build & Push
+        uses: int128/kaniko-action@v1
+        with:
+          push: true
+          file: Dockerfile.temporal
+          tags: |
+            ${{ env.IMAGE_BASE }}temporal-server:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}temporal-server:latest
+          cache: true
+          cache-repository: ${{ env.IMAGE_BASE }}temporal-server/cache

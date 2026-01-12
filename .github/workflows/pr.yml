@@ -2,19 +2,22 @@ name: Pull Request
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: useblacksmith/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
@@ -23,15 +26,14 @@ jobs:
 
   test:
     name: Test (Go ${{ matrix.go-version }})
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     strategy:
       matrix:
         go-version: ["1.24", "1.25"]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v5
+      - uses: useblacksmith/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -40,7 +42,8 @@ jobs:
 
   coverage:
     name: Coverage
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -72,50 +75,40 @@ jobs:
           - 4317:4317
           - 4318:4318
 
+      temporal:
+        image: europe-west1-docker.pkg.dev/quiqup-infrastructure/public/temporal-server:latest
+        ports:
+          - 7233:7233
+        options: >-
+          --health-cmd "temporal operator cluster health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: useblacksmith/setup-go@v6
         with:
-          go-version: "1.24"
-
-      - name: Wait for Temporal
-        run: |
-          # Start Temporal in the background (uses postgres service)
-          docker run -d --name temporal \
-            --network ${{ job.services.postgres.network }} \
-            -e DB=postgres12 \
-            -e DB_PORT=5432 \
-            -e POSTGRES_USER=test \
-            -e POSTGRES_PWD=test \
-            -e POSTGRES_SEEDS=postgres \
-            -p 7233:7233 \
-            temporalio/auto-setup:1.25.2
-
-          # Wait for Temporal to be ready
-          echo "Waiting for Temporal to be ready..."
-          for i in {1..60}; do
-            if docker exec temporal temporal operator cluster health 2>/dev/null | grep -q SERVING; then
-              echo "Temporal is ready!"
-              break
-            fi
-            echo "Waiting... ($i/60)"
-            sleep 5
-          done
+          go-version-file: go.mod
 
       - name: Run tests with coverage
         env:
           TEMPORAL_HOST: localhost:7233
           KAFKA_BROKERS: localhost:9092
           OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4318
-        run: go test -tags=integration -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -race -tags=integration -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Check coverage threshold
         uses: vladopajic/go-test-coverage@v2
         with:
           config: ./.testcoverage.yml
 
-      - name: Cleanup
-        if: always()
-        run: docker rm -f temporal || true
+      - name: Generate coverage HTML
+        run: go tool cover -html=coverage.out -o=coverage.html
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.html
