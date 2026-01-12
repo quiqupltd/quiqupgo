@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: europe-west1-docker.pkg.dev
-  IMAGE_BASE: europe-west1-docker.pkg.dev/quiqup-infrastructure/apps/
+  IMAGE_BASE: europe-west1-docker.pkg.dev/quiqup-infrastructure/public/
 
 jobs:
   build:

@@ -76,7 +76,7 @@ jobs:
           - 4318:4318
 
       temporal:
-        image: europe-west1-docker.pkg.dev/quiqup-infrastructure/apps/temporal-server:latest
+        image: europe-west1-docker.pkg.dev/quiqup-infrastructure/public/temporal-server:latest
         ports:
           - 7233:7233
         options: >-
