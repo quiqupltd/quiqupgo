@@ -10,12 +10,14 @@ on:
 
 env:
   REGISTRY: europe-west1-docker.pkg.dev
-  IMAGE: quiqup-infrastructure/apps/temporal-server
+  IMAGE_BASE: europe-west1-docker.pkg.dev/quiqup-infrastructure/apps/
 
 jobs:
   build:
     name: Build and Push
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 30
+
     permissions:
       contents: read
       id-token: write
@@ -23,16 +25,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Google Cloud Auth
+        id: auth
+        uses: google-github-actions/auth@v1
         with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          credentials_json: ${{ secrets.GOOGLE_GITHUB_KEY }}
+          token_format: access_token
+          export_environment_variables: true
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+      - name: Artifact Registry Auth
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
 
-      - name: Build and push
-        run: |
-          docker build -f Dockerfile.temporal -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest .
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest
+      - name: Kaniko Build & Push
+        uses: int128/kaniko-action@v1
+        with:
+          push: true
+          file: Dockerfile.temporal
+          tags: |
+            ${{ env.IMAGE_BASE }}temporal-server:${{ github.sha }}
+            ${{ env.IMAGE_BASE }}temporal-server:latest
+          cache: true
+          cache-repository: ${{ env.IMAGE_BASE }}temporal-server/cache
