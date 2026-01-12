@@ -52,7 +52,5 @@ quiqupgo/
 └── taskfiles/        # Task definitions
 ```
 
-## Private Repository
-This is a private Quiqup repository. Consumers need:
-- `GOPRIVATE=github.com/quiqupltd/*`
-- Git configured for SSH or PAT authentication
+## Public Repository
+This is a public open-source library published on GitHub.
