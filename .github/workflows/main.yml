@@ -71,41 +71,19 @@ jobs:
 
       - name: Start Temporal
         run: |
-          # Start Temporal server (uses postgres service)
-          docker run -d --name temporal-server \
-            --network ${{ job.services.postgres.network }} \
-            -e DB=postgres12 \
-            -e DB_PORT=5432 \
-            -e POSTGRES_USER=test \
-            -e POSTGRES_PWD=test \
-            -e POSTGRES_SEEDS=postgres \
+          docker run -d --name temporal \
             -p 7233:7233 \
-            temporalio/server:1.25.2
+            temporalio/admin-tools:1.29 \
+            temporal server start-dev --db-filename /tmp/db --ip 0.0.0.0
 
-          # Wait for Temporal server to start
-          echo "Waiting for Temporal server to start..."
-          sleep 10
-
-          # Run schema setup using admin-tools
-          docker run --rm \
-            --network ${{ job.services.postgres.network }} \
-            -e TEMPORAL_ADDRESS=temporal-server:7233 \
-            temporalio/admin-tools:1.25.2 \
-            temporal operator namespace create --namespace default || true
-
-          # Wait for Temporal to be ready
           echo "Waiting for Temporal to be ready..."
-          for i in {1..60}; do
-            if docker run --rm \
-              --network ${{ job.services.postgres.network }} \
-              -e TEMPORAL_ADDRESS=temporal-server:7233 \
-              temporalio/admin-tools:1.25.2 \
-              temporal operator cluster health 2>/dev/null | grep -q SERVING; then
+          for i in {1..30}; do
+            if docker exec temporal temporal operator cluster health 2>/dev/null | grep -q SERVING; then
               echo "Temporal is ready!"
               break
             fi
-            echo "Waiting... ($i/60)"
-            sleep 5
+            echo "Waiting... ($i/30)"
+            sleep 2
           done
 
       - name: Run tests with coverage
@@ -138,4 +116,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker rm -f temporal-server || true
+        run: docker rm -f temporal || true
