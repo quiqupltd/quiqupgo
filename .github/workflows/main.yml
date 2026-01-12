@@ -91,7 +91,7 @@ jobs:
           TEMPORAL_HOST: localhost:7233
           KAFKA_BROKERS: localhost:9092
           OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4318
-        run: go test -tags=integration -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -race -tags=integration -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Check coverage threshold
         uses: vladopajic/go-test-coverage@v2
