@@ -112,7 +112,7 @@ package main
 
 import (
     "github.com/quiqupltd/quiqupgo/logger"
-    "github.com/quiqupltd/quiqupgo/pubsub"
+    "github.com/quiqupltd/quiqupgo/kafka"
     "github.com/quiqupltd/quiqupgo/temporal"
     "github.com/quiqupltd/quiqupgo/tracing"
     "go.uber.org/fx"
@@ -125,14 +125,14 @@ func main() {
             newTracingConfig,
             newLoggerConfig,
             newTemporalConfig,
-            newPubSubConfig,
+            newKafkaConfig,
         ),
 
         // Include modules
         tracing.Module(),
         logger.Module(),
         temporal.Module(),
-        pubsub.Module(),
+        kafka.Module(),
 
         // Your worker code
         fx.Invoke(runWorker),
@@ -146,8 +146,8 @@ func newTemporalConfig() temporal.Config {
     }
 }
 
-func newPubSubConfig() pubsub.Config {
-    return &pubsub.StandardConfig{
+func newKafkaConfig() kafka.Config {
+    return &kafka.StandardConfig{
         Brokers:       []string{"kafka:9092"},
         ConsumerGroup: "my-worker",
     }
@@ -164,7 +164,7 @@ Some modules depend on others:
 | `logger` | None (optional: `tracing` for OTEL integration) |
 | `temporal` | `logger`, `tracing` |
 | `gormfx` | `tracing` |
-| `pubsub` | `logger`, `tracing` |
+| `kafka` | `logger`, `tracing` |
 | `middleware` | `tracing` |
 
 ## Testing

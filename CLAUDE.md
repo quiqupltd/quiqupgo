@@ -57,7 +57,7 @@ logger.Module() → provides: *zap.Logger, Logger interface
     ↓
 temporal.Module() → requires: *zap.Logger, Tracer → provides: client.Client
 gormfx.Module()   → requires: TracerProvider → provides: *gorm.DB
-pubsub.Module()   → requires: *zap.Logger, Tracer → provides: Producer, Consumer
+kafka.Module()   → requires: *zap.Logger, Tracer → provides: Producer, Consumer
 ```
 
 ### Config Interface Pattern

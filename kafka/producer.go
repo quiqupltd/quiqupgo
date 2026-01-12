@@ -1,4 +1,4 @@
-package pubsub
+package kafka
 
 import (
 	"context"

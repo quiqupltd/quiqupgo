@@ -40,7 +40,7 @@ services:
     volumes:
       - temporaldata:/tmp
 
-  # Redpanda for PubSub integration tests (Kafka-compatible)
+  # Redpanda for Kafka integration tests (Kafka-compatible)
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v24.2.14
     command:

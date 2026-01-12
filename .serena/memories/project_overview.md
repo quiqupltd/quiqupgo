@@ -23,7 +23,7 @@ Quiqupgo is a collection of reusable [uber/fx](https://github.com/uber-go/fx) mo
 | **Logger** | `logger` | *zap.Logger, Logger interface |
 | **Temporal** | `temporal` | Temporal client.Client |
 | **GORM** | `gormfx` | *gorm.DB with OTEL plugin |
-| **PubSub** | `pubsub` | Kafka Producer, Consumer |
+| **Kafka** | `kafka` | Kafka Producer, Consumer |
 | **Middleware** | `middleware` | HTTP tracing middleware (Echo/net/http) |
 
 ## Module Dependencies
@@ -34,7 +34,7 @@ logger.Module() → provides: *zap.Logger, Logger interface
     ↓
 temporal.Module() → requires: *zap.Logger, Tracer → provides: client.Client
 gormfx.Module()   → requires: TracerProvider → provides: *gorm.DB
-pubsub.Module()   → requires: *zap.Logger, Tracer → provides: Producer, Consumer
+kafka.Module()   → requires: *zap.Logger, Tracer → provides: Producer, Consumer
 ```
 
 ## Repository Structure
@@ -44,7 +44,7 @@ quiqupgo/
 ├── logger/           # Structured logging module
 ├── temporal/         # Temporal workflow client module
 ├── gormfx/           # GORM database module
-├── pubsub/           # Kafka/PubSub messaging module
+├── kafka/           # Kafka/Kafka messaging module
 ├── middleware/       # HTTP middleware (not an fx module)
 ├── fxutil/           # Shared fx utilities
 ├── examples/         # Example applications
