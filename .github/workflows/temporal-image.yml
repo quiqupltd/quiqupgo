@@ -1,0 +1,38 @@
+name: Temporal Image
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - Dockerfile.temporal
+      - .github/workflows/temporal-image.yml
+  workflow_dispatch:
+
+env:
+  REGISTRY: europe-west1-docker.pkg.dev
+  IMAGE: quiqup-infrastructure/apps/temporal-server
+
+jobs:
+  build:
+    name: Build and Push
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Build and push
+        run: |
+          docker build -f Dockerfile.temporal -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest

@@ -75,6 +75,16 @@ jobs:
           - 4317:4317
           - 4318:4318
 
+      temporal:
+        image: europe-west1-docker.pkg.dev/quiqup-infrastructure/apps/temporal-server:latest
+        ports:
+          - 7233:7233
+        options: >-
+          --health-cmd "temporal operator cluster health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -82,12 +92,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Start Temporal
-        run: |
-          docker run -d --name temporal \
-            -p 7233:7233 \
-            temporalio/admin-tools:1.29 \
-            temporal server start-dev --db-filename /tmp/db --ip 0.0.0.0
       - name: Run tests with coverage
         env:
           TEMPORAL_HOST: localhost:7233
@@ -108,7 +112,3 @@ jobs:
         with:
           name: coverage
           path: coverage.html
-
-      - name: Cleanup
-        if: always()
-        run: docker rm -f temporal || true

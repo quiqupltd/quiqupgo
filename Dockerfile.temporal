@@ -1,0 +1,6 @@
+FROM temporalio/admin-tools:1.29
+
+ENTRYPOINT ["temporal"]
+CMD ["server", "start-dev", "--db-filename", "/tmp/db", "--ip", "0.0.0.0"]
+
+EXPOSE 7233 8233
