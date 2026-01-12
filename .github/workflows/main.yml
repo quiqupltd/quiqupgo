@@ -75,17 +75,6 @@ jobs:
             -p 7233:7233 \
             temporalio/admin-tools:1.29 \
             temporal server start-dev --db-filename /tmp/db --ip 0.0.0.0
-
-          echo "Waiting for Temporal to be ready..."
-          for i in {1..30}; do
-            if docker exec temporal temporal operator cluster health 2>/dev/null | grep -q SERVING; then
-              echo "Temporal is ready!"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 2
-          done
-
       - name: Run tests with coverage
         env:
           TEMPORAL_HOST: localhost:7233

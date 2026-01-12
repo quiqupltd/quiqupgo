@@ -39,11 +39,6 @@ services:
       - "8233" # UI
     volumes:
       - temporaldata:/tmp
-    healthcheck:
-      test: ["CMD", "temporal", "operator", "cluster", "health"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
 
   # Redpanda for PubSub integration tests (Kafka-compatible)
   redpanda:
