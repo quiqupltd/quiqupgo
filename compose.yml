@@ -29,9 +29,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # Temporal server for workflow integration tests (all-in-one dev image)
+  # Temporal server for workflow integration tests
   temporal:
-    image: temporalio/auto-setup:1.25.2
+    image: temporalio/server:1.25.2
     expose:
       - "7233" # gRPC
     environment:
@@ -44,10 +44,26 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "temporal", "operator", "cluster", "health"]
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/7233' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 20
+
+  # Temporal admin tools for schema setup
+  temporal-admin:
+    image: temporalio/admin-tools:1.25.2
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    depends_on:
+      temporal:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sleep 5
+        temporal operator namespace create --namespace default || true
+        echo "Temporal namespace setup complete"
+        tail -f /dev/null
 
   # Redpanda for PubSub integration tests (Kafka-compatible)
   redpanda:

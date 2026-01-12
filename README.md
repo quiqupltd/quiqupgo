@@ -541,6 +541,37 @@ env:
 task --list
 ```
 
+## Versioning & Releases
+
+This project uses [Semantic Versioning](https://semver.org/) and [Git Flow](https://nvie.com/posts/a-successful-git-branching-model/) for release management.
+
+### Consuming Specific Versions
+
+```bash
+# Latest version
+go get github.com/quiqupltd/quiqupgo
+
+# Specific version
+go get github.com/quiqupltd/quiqupgo@v0.1.0
+
+# Latest patch for a minor version
+go get github.com/quiqupltd/quiqupgo@v0.1
+```
+
+### Branching Strategy
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Production-ready releases, tagged with versions |
+| `develop` | Integration branch for features |
+| `feat/*` | New features and enhancements |
+| `rel/*` | Release preparation |
+| `hotfix/*` | Critical production fixes |
+
+### Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and [GitHub Releases](https://github.com/quiqupltd/quiqupgo/releases) for downloadable artifacts.
+
 ## Project Structure
 
 ```
