@@ -17,6 +17,8 @@ func TracerName() string {
 }
 
 // GetResource creates an OpenTelemetry resource with service and deployment attributes.
+// Note: We use specific process detectors instead of resource.WithProcess() to avoid
+// calling os/user.Current() which fails in minimal containers without CGO or $USER set.
 func GetResource(ctx context.Context, cfg Config) (*resource.Resource, error) {
 	return resource.New(ctx,
 		resource.WithAttributes(
@@ -25,7 +27,13 @@ func GetResource(ctx context.Context, cfg Config) (*resource.Resource, error) {
 		),
 		resource.WithTelemetrySDK(),
 		resource.WithHost(),
-		resource.WithProcess(),
+		// Use specific process detectors to avoid os/user.Current() dependency
+		resource.WithProcessPID(),
+		resource.WithProcessExecutableName(),
+		resource.WithProcessExecutablePath(),
+		resource.WithProcessRuntimeName(),
+		resource.WithProcessRuntimeVersion(),
+		resource.WithProcessRuntimeDescription(),
 	)
 }
 

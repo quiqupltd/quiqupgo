@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-01-12
+
+### Fixed
+
+- **Tracing Module**: Fixed resource detection failing in minimal containers with error
+  `user: Current requires cgo or $USER set in environment`. Replaced `resource.WithProcess()`
+  with specific process detectors that don't require `os/user.Current()`.
+
 ## [0.3.0] - 2026-01-12
 
 Initial public release of quiqupgo - a collection of reusable uber/fx modules for Go microservices.
@@ -58,5 +66,6 @@ Initial public release of quiqupgo - a collection of reusable uber/fx modules fo
   - `CLAUDE.md` with project instructions for Claude Code
   - `.serena/` configuration for Serena IDE integration
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.0...v0.3.2
 [0.3.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.3.0
