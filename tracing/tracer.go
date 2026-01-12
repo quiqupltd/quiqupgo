@@ -21,7 +21,9 @@ var (
 // GetTracerProvider returns a TracerProvider for the given configuration.
 // It caches providers by service name to avoid creating duplicates.
 // If OTLP endpoint is not configured, returns nil (no-op tracing).
-func GetTracerProvider(ctx context.Context, cfg Config, opts *moduleOptions) (*trace.TracerProvider, error) {
+//
+// Options can be passed to customize the provider (e.g., WithBatchTimeout, WithSampler).
+func GetTracerProvider(ctx context.Context, cfg Config, opts ...ModuleOption) (*trace.TracerProvider, error) {
 	serviceName := cfg.GetServiceName()
 
 	// Check cache first
@@ -32,8 +34,16 @@ func GetTracerProvider(ctx context.Context, cfg Config, opts *moduleOptions) (*t
 	}
 	tracerProvidersMu.Unlock()
 
+	// Build options
+	options := defaultModuleOptions()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(options)
+		}
+	}
+
 	// Create new provider
-	tp, err := createTracerProvider(ctx, cfg, opts)
+	tp, err := createTracerProvider(ctx, cfg, options)
 	if err != nil {
 		return nil, err
 	}
