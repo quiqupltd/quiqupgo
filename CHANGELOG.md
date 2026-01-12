@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-01-13
+
+### Fixed
+
+- **Tracing Module**: Fixed `GetTracerProvider`, `GetMeterProvider`, and `GetLoggerProvider` functions
+  having private `*moduleOptions` parameter type, preventing external usage. Changed signatures to
+  accept variadic `...ModuleOption` (which is public), enabling direct use outside the fx module:
+  ```go
+  tp, err := tracing.GetTracerProvider(ctx, cfg)
+  tp, err := tracing.GetTracerProvider(ctx, cfg, tracing.WithSampler(...))
+  ```
+
 ## [0.3.3] - 2026-01-12
 
 ### Added
@@ -76,7 +88,8 @@ Initial public release of quiqupgo - a collection of reusable uber/fx modules fo
   - `CLAUDE.md` with project instructions for Claude Code
   - `.serena/` configuration for Serena IDE integration
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.0...v0.3.2
 [0.3.0]: https://github.com/quiqupltd/quiqupgo/releases/tag/v0.3.0
