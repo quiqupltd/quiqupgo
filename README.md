@@ -12,58 +12,6 @@ Reusable [uber/fx](https://github.com/uber-go/fx) modules for Go microservices, 
 - **Testing Utilities**: Every module includes test helpers (NoopModule, MockModule, BufferLogger)
 - **Uber/fx Integration**: Seamless dependency injection with lifecycle management
 
-## Prerequisites
-
-This is a private repository. Before installing, you need to configure Go and Git to access private Quiqup modules.
-
-### Local Development Setup
-
-1. **Set GOPRIVATE** to skip the public proxy for Quiqup modules:
-
-```bash
-# Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
-export GOPRIVATE=github.com/quiqupltd/*
-```
-
-2. **Configure Git** to use SSH for GitHub:
-
-```bash
-git config --global url."git@github.com:".insteadOf "https://github.com/"
-```
-
-Or if using a GitHub Personal Access Token:
-
-```bash
-git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-```
-
-### CI/CD Setup
-
-For GitHub Actions, add these environment variables to your workflow:
-
-```yaml
-env:
-  GOPRIVATE: github.com/quiqupltd/*
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure Git for private modules
-        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
-
-      - run: go mod download
-      - run: go build ./...
-```
-
-> **Note**: `GH_PAT` should be a GitHub Personal Access Token with `repo` scope, stored as a repository or organization secret.
-
 ## Installation
 
 ```bash
@@ -468,8 +416,8 @@ func Module(serviceName string, db *sql.DB) fx.Option {
 
 - Go 1.24+ (via asdf: `asdf install`)
 - [Task](https://taskfile.dev/) (via asdf: `asdf install`)
-- [OrbStack](https://orbstack.dev/) (recommended for local Docker)
-- [direnv](https://direnv.net/) (for automatic environment loading)
+- Docker or [OrbStack](https://orbstack.dev/)
+- [direnv](https://direnv.net/) (optional, for automatic environment loading)
 
 ### Setup
 
@@ -482,12 +430,6 @@ task tools:install
 
 # Setup git hooks
 task tools:hooks
-
-# Allow direnv to load .env file
-direnv allow
-
-# Copy example env (already done, but for reference)
-cp .env.example .env
 
 # Run tests
 task test:unit
@@ -517,23 +459,12 @@ task test:integration
 task docker:down
 ```
 
-With OrbStack, services are accessible via `.orb.local` URLs (no port mapping needed):
-- `postgres.quiqupgo.orb.local:5432`
-- `redpanda.quiqupgo.orb.local:9092`
-- `temporal.quiqupgo.orb.local:7233`
-- `jaeger.quiqupgo.orb.local:16686` (trace UI)
-- `redpanda-console.quiqupgo.orb.local:8080` (Kafka UI)
-
-### CI/CD Integration Tests
-
-For GitHub Actions, override the environment variables:
-
-```yaml
-env:
-  KAFKA_BROKER: localhost:9092
-  POSTGRES_HOST: localhost
-  TEMPORAL_HOST: localhost:7233
-```
+Services are accessible at:
+- Postgres: `localhost:5432`
+- Redpanda/Kafka: `localhost:19092`
+- Temporal: `localhost:7233`
+- Jaeger UI: `localhost:16686`
+- Redpanda Console: `localhost:8080`
 
 ### Available Tasks
 
