@@ -1,0 +1,101 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - unconvert
+    - gocritic
+    - revive
+    - nilerr
+    - bodyclose
+    - errorlint
+    - exhaustive
+    - gosec
+    - noctx
+    - prealloc
+    - predeclared
+    - whitespace
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: false
+    exclude-functions:
+      - (io.Closer).Close
+      - (net/http.ResponseWriter).Write
+
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unreachable-code
+      # Disabled - too noisy for interface implementations
+      # - name: exported
+
+  gosec:
+    excludes:
+      - G104  # Audit errors not checked (handled by errcheck)
+      - G304  # File path provided as taint input (common in CLIs)
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+    disabled-checks:
+      - hugeParam
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-rules:
+    # Ignore errcheck in tests
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+
+    # Ignore in testutil directories
+    - path: testutil/
+      linters:
+        - errcheck
+        - unparam
+        - revive
+        - gocritic
+
+    # Examples may have unused code
+    - path: examples/
+      linters:
+        - unused
+        - unparam

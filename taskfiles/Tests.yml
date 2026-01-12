@@ -1,0 +1,39 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Run all unit tests
+    cmds:
+      - go test -v -race -coverprofile=coverage.out ./...
+
+  unit:
+    desc: Run unit tests only (alias for default)
+    cmds:
+      - go test -v -race -coverprofile=coverage.out ./...
+
+  short:
+    desc: Run tests without verbose output
+    cmds:
+      - go test -race ./...
+
+  coverage:
+    desc: Generate coverage report
+    deps: [default]
+    cmds:
+      - go tool cover -html=coverage.out -o coverage.html
+      - echo "Coverage report generated at coverage.html"
+
+  module:
+    desc: Test a specific module (usage - task test:module MODULE=tracing)
+    cmds:
+      - go test -v -race ./{{.MODULE}}/...
+
+  integration:
+    desc: Run integration tests (requires docker:up first)
+    cmds:
+      - go test -v -race -tags=integration ./...
+
+  all:
+    desc: Run both unit and integration tests
+    cmds:
+      - go test -v -race -tags=integration -coverprofile=coverage.out ./...

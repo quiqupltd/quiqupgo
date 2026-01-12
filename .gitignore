@@ -1,0 +1,4 @@
+coverage*
+
+# Environment files (keep .env.example, ignore .env)
+.env

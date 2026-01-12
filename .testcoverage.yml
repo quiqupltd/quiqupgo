@@ -1,0 +1,21 @@
+# Configuration for go-test-coverage
+# https://github.com/vladopajic/go-test-coverage
+
+profile: coverage.out
+
+# Minimum coverage thresholds
+threshold:
+  # Minimum coverage for each file
+  file: 0
+  # Minimum coverage for each package
+  package: 0
+  # Minimum total coverage
+  total: 80
+
+# Exclude patterns from coverage calculation
+exclude:
+  # Exclude example applications
+  paths:
+    - ^examples/.*$
+  # Exclude test utilities (they're helpers, not production code)
+    - ^.*/testutil/.*$
