@@ -2,14 +2,14 @@ name: Main
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   test:
     name: Test (Go ${{ matrix.go-version }})
     runs-on: blacksmith-2vcpu-ubuntu-2204
     concurrency:
-      group: main-test-${{ matrix.go-version }}
+      group: ${{ github.ref_name }}-test-${{ matrix.go-version }}
       cancel-in-progress: true
     strategy:
       matrix:
@@ -28,7 +28,7 @@ jobs:
     name: Coverage
     runs-on: blacksmith-4vcpu-ubuntu-2204
     concurrency:
-      group: main-coverage
+      group: ${{ github.ref_name }}-coverage
       cancel-in-progress: true
 
     services:
