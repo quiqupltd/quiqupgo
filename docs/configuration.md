@@ -164,7 +164,7 @@ sqlDB, _ := sql.Open("postgres", dsn)
 }
 ```
 
-## PubSub Module
+## Kafka Module
 
 ### Interface
 
@@ -207,7 +207,7 @@ type Config interface {
 ### Example
 
 ```go
-&pubsub.StandardConfig{
+&kafka.StandardConfig{
     Brokers:       []string{"kafka1:9092", "kafka2:9092"},
     ConsumerGroup: "order-processor",
     TLSEnabled:    true,

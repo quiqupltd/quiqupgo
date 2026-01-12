@@ -1,8 +1,8 @@
-package pubsub
+package kafka
 
 import "time"
 
-// Config is the interface that applications must implement to configure the PubSub module.
+// Config is the interface that applications must implement to configure the Kafka module.
 // Applications can either implement this interface on their own config struct or use
 // StandardConfig.
 type Config interface {

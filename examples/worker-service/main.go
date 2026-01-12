@@ -4,7 +4,7 @@
 //   - OpenTelemetry tracing
 //   - Structured logging with zap
 //   - Temporal workflow client
-//   - Kafka pubsub (producer and consumer)
+//   - Kafka messaging (producer and consumer)
 //
 // Note: This example requires running Temporal and Kafka servers.
 //
@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/quiqupltd/quiqupgo/logger"
-	"github.com/quiqupltd/quiqupgo/pubsub"
+	"github.com/quiqupltd/quiqupgo/kafka"
 	"github.com/quiqupltd/quiqupgo/temporal"
 	"github.com/quiqupltd/quiqupgo/tracing"
 	"go.temporal.io/sdk/client"
@@ -36,14 +36,14 @@ func main() {
 			newTracingConfig,
 			newLoggerConfig,
 			newTemporalConfig,
-			newPubSubConfig,
+			newKafkaConfig,
 		),
 
 		// Include modules
 		tracing.Module(),
 		logger.Module(),
 		temporal.Module(),
-		pubsub.Module(),
+		kafka.Module(),
 
 		// Start the worker
 		fx.Invoke(registerWorker),
@@ -76,11 +76,11 @@ func newTemporalConfig() temporal.Config {
 	}
 }
 
-// newPubSubConfig creates the Kafka configuration.
+// newKafkaConfig creates the Kafka configuration.
 // Note: Requires a running Kafka server at localhost:9092
-func newPubSubConfig() pubsub.Config {
+func newKafkaConfig() kafka.Config {
 	enableTracing := false // Disable for demo
-	return &pubsub.StandardConfig{
+	return &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		ConsumerGroup: "worker-service",
 		EnableTracing: &enableTracing,
@@ -91,8 +91,8 @@ func newPubSubConfig() pubsub.Config {
 func registerWorker(
 	lc fx.Lifecycle,
 	c client.Client,
-	producer pubsub.Producer,
-	consumer pubsub.Consumer,
+	producer kafka.Producer,
+	consumer kafka.Consumer,
 	log *zap.Logger,
 ) {
 	// Create Temporal worker
@@ -150,7 +150,7 @@ func ExampleWorkflow(ctx workflow.Context, input string) (string, error) {
 }
 
 // PublishEventActivity publishes an event to Kafka.
-func PublishEventActivity(producer pubsub.Producer, log *zap.Logger) func(ctx context.Context, data string) (string, error) {
+func PublishEventActivity(producer kafka.Producer, log *zap.Logger) func(ctx context.Context, data string) (string, error) {
 	return func(ctx context.Context, data string) (string, error) {
 		if producer == nil {
 			return fmt.Sprintf("processed: %s", data), nil
@@ -168,8 +168,8 @@ func PublishEventActivity(producer pubsub.Producer, log *zap.Logger) func(ctx co
 }
 
 // handleMessage handles messages from Kafka.
-func handleMessage(log *zap.Logger) pubsub.MessageHandler {
-	return func(ctx context.Context, msg pubsub.ConsumerMessage) error {
+func handleMessage(log *zap.Logger) kafka.MessageHandler {
+	return func(ctx context.Context, msg kafka.ConsumerMessage) error {
 		log.Info("received message",
 			zap.String("topic", msg.Topic),
 			zap.Int64("offset", msg.Offset),

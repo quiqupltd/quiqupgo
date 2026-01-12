@@ -66,10 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Accepts existing `*sql.DB` for connection pooling control
   - Test utilities: `testutil.MockModule()`
 
-- **PubSub Module** (`pubsub/`): Kafka messaging with tracing
+- **Kafka Module** (`kafka/`): Kafka messaging with tracing
   - Producer and Consumer with OTEL context propagation
   - Configurable consumer groups and topics
-  - Test utilities: `testutil.MockModule()` with in-memory pubsub
+  - Test utilities: `testutil.MockModule()` with in-memory kafka
 
 - **Middleware** (`middleware/`): HTTP tracing middleware
   - Echo framework integration
