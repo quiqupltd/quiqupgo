@@ -26,7 +26,7 @@ task test:short
 # Test a specific module
 task test:module MODULE=tracing
 task test:module MODULE=logger
-task test:module MODULE=pubsub
+task test:module MODULE=kafka
 
 # Generate coverage report (creates coverage.html)
 task coverage

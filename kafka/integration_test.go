@@ -1,6 +1,6 @@
 //go:build integration
 
-package pubsub_test
+package kafka_test
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/quiqupltd/quiqupgo/fxutil"
 	"github.com/quiqupltd/quiqupgo/logger/testutil"
-	"github.com/quiqupltd/quiqupgo/pubsub"
+	"github.com/quiqupltd/quiqupgo/kafka"
 	tracingtest "github.com/quiqupltd/quiqupgo/tracing/testutil"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/fx"
@@ -31,7 +31,7 @@ func getTestBroker() string {
 	return "redpanda.quiqupgo.orb.local:19092"
 }
 
-// IntegrationTestConfig implements pubsub.Config for integration tests.
+// IntegrationTestConfig implements kafka.Config for integration tests.
 type IntegrationTestConfig struct {
 	brokers       []string
 	consumerGroup string
@@ -64,13 +64,13 @@ func (c *IntegrationTestConfig) GetSASLPassword() string           { return "" }
 func IntegrationTestModule(topic string) fx.Option {
 	cfg := NewIntegrationTestConfig(topic)
 
-	return fx.Module("pubsub-integration-test",
+	return fx.Module("kafka-integration-test",
 		tracingtest.NoopModule(),
 		testutil.NoopModule(),
-		fx.Provide(func() pubsub.Config {
+		fx.Provide(func() kafka.Config {
 			return cfg
 		}),
-		pubsub.Module(),
+		kafka.Module(),
 	)
 }
 
@@ -78,8 +78,8 @@ func IntegrationTestModule(topic string) fx.Option {
 type KafkaIntegrationSuite struct {
 	suite.Suite
 	topic    string
-	producer pubsub.Producer
-	consumer pubsub.Consumer
+	producer kafka.Producer
+	consumer kafka.Consumer
 	app      *fxtest.App
 }
 
@@ -122,7 +122,7 @@ func (s *KafkaIntegrationSuite) TestPublishSingleMessage() {
 func (s *KafkaIntegrationSuite) TestPublishBatchMessages() {
 	ctx := context.Background()
 
-	messages := []pubsub.Message{
+	messages := []kafka.Message{
 		{Key: []byte("batch-key-1"), Value: []byte("batch-value-1")},
 		{Key: []byte("batch-key-2"), Value: []byte("batch-value-2")},
 		{Key: []byte("batch-key-3"), Value: []byte("batch-value-3")},
@@ -152,7 +152,7 @@ func (s *KafkaIntegrationSuite) TestConsumeMessages() {
 	received := make([]string, 0, len(testMessages))
 	done := make(chan struct{})
 
-	handler := func(ctx context.Context, msg pubsub.ConsumerMessage) error {
+	handler := func(ctx context.Context, msg kafka.ConsumerMessage) error {
 		received = append(received, string(msg.Value))
 		if len(received) >= len(testMessages) {
 			close(done)
@@ -188,7 +188,7 @@ func (s *KafkaIntegrationSuite) TestMessageWithHeadersRoundTrip() {
 	}
 
 	// Publish with headers
-	err := s.producer.PublishBatch(ctx, topic, []pubsub.Message{
+	err := s.producer.PublishBatch(ctx, topic, []kafka.Message{
 		{
 			Key:     testKey,
 			Value:   testValue,
@@ -204,10 +204,10 @@ func (s *KafkaIntegrationSuite) TestMessageWithHeadersRoundTrip() {
 	consumeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	received := make(chan pubsub.ConsumerMessage, 1)
+	received := make(chan kafka.ConsumerMessage, 1)
 
 	go func() {
-		_ = s.consumer.Subscribe(consumeCtx, []string{topic}, func(ctx context.Context, msg pubsub.ConsumerMessage) error {
+		_ = s.consumer.Subscribe(consumeCtx, []string{topic}, func(ctx context.Context, msg kafka.ConsumerMessage) error {
 			received <- msg
 			return nil
 		})
@@ -228,8 +228,8 @@ func (s *KafkaIntegrationSuite) TestMessageWithHeadersRoundTrip() {
 type TracingIntegrationSuite struct {
 	suite.Suite
 	topic    string
-	producer pubsub.Producer
-	consumer pubsub.Consumer
+	producer kafka.Producer
+	consumer kafka.Consumer
 	app      *fxtest.App
 }
 
@@ -240,7 +240,7 @@ func TestTracingIntegrationSuite(t *testing.T) {
 	suite.Run(t, new(TracingIntegrationSuite))
 }
 
-// TracingTestConfig implements pubsub.Config with tracing enabled.
+// TracingTestConfig implements kafka.Config with tracing enabled.
 type TracingTestConfig struct {
 	brokers       []string
 	consumerGroup string
@@ -267,13 +267,13 @@ func TracingIntegrationTestModule(topic string) fx.Option {
 		consumerGroup: fmt.Sprintf("tracing-test-group-%s", uuid.New().String()[:8]),
 	}
 
-	return fx.Module("pubsub-tracing-integration-test",
+	return fx.Module("kafka-tracing-integration-test",
 		tracingtest.NoopModule(),
 		testutil.NoopModule(),
-		fx.Provide(func() pubsub.Config {
+		fx.Provide(func() kafka.Config {
 			return cfg
 		}),
-		pubsub.Module(),
+		kafka.Module(),
 	)
 }
 
@@ -306,7 +306,7 @@ func (s *TracingIntegrationSuite) TestPublishWithTracing() {
 func (s *TracingIntegrationSuite) TestPublishBatchWithTracing() {
 	ctx := context.Background()
 
-	messages := []pubsub.Message{
+	messages := []kafka.Message{
 		{Key: []byte("batch-key-1"), Value: []byte("batch-value-1")},
 		{Key: []byte("batch-key-2"), Value: []byte("batch-value-2")},
 	}
@@ -328,10 +328,10 @@ func (s *TracingIntegrationSuite) TestConsumeWithTracing() {
 	consumeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	received := make(chan pubsub.ConsumerMessage, 1)
+	received := make(chan kafka.ConsumerMessage, 1)
 
 	go func() {
-		_ = s.consumer.Subscribe(consumeCtx, []string{topic}, func(ctx context.Context, msg pubsub.ConsumerMessage) error {
+		_ = s.consumer.Subscribe(consumeCtx, []string{topic}, func(ctx context.Context, msg kafka.ConsumerMessage) error {
 			received <- msg
 			return nil
 		})

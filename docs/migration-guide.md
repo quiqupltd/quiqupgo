@@ -70,7 +70,7 @@ List the fx modules you currently use:
 - [ ] Logging
 - [ ] Database (GORM)
 - [ ] Temporal
-- [ ] Kafka/PubSub
+- [ ] Kafka
 - [ ] HTTP Middleware
 
 ### Step 3: Create Config Adapters
@@ -266,7 +266,7 @@ You can migrate module by module:
 
 1. **Week 1**: Migrate tracing + logger
 2. **Week 2**: Migrate GORM
-3. **Week 3**: Migrate Temporal + PubSub
+3. **Week 3**: Migrate Temporal + Kafka
 4. **Week 4**: Migrate middleware + update tests
 
 Each step can be merged independently.

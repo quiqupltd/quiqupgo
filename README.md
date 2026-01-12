@@ -78,7 +78,7 @@ go get github.com/quiqupltd/quiqupgo
 | **Logger** | `github.com/quiqupltd/quiqupgo/logger` | Structured logging with zap + OTEL |
 | **Temporal** | `github.com/quiqupltd/quiqupgo/temporal` | Temporal workflow client |
 | **GORM** | `github.com/quiqupltd/quiqupgo/gormfx` | GORM database with OTEL plugin |
-| **PubSub** | `github.com/quiqupltd/quiqupgo/pubsub` | Kafka messaging with tracing |
+| **Kafka** | `github.com/quiqupltd/quiqupgo/kafka` | Kafka messaging with tracing |
 | **Middleware** | `github.com/quiqupltd/quiqupgo/middleware` | HTTP tracing middleware (Echo/net/http) |
 
 ## Quick Start
@@ -333,16 +333,16 @@ fx.New(
 )
 ```
 
-### PubSub Module
+### Kafka Module
 
 Provides Kafka producer and consumer with OTEL tracing.
 
 ```go
-import "github.com/quiqupltd/quiqupgo/pubsub"
+import "github.com/quiqupltd/quiqupgo/kafka"
 
 // What it provides via fx:
-// - pubsub.Producer
-// - pubsub.Consumer
+// - kafka.Producer
+// - kafka.Consumer
 
 // Configuration interface
 type Config interface {
@@ -358,14 +358,14 @@ type Config interface {
 // Usage
 fx.New(
     // ... logger and tracing modules first
-    fx.Provide(func() pubsub.Config {
-        return &pubsub.StandardConfig{
+    fx.Provide(func() kafka.Config {
+        return &kafka.StandardConfig{
             Brokers:       []string{"kafka:9092"},
             ConsumerGroup: "my-service",
             Topics:        []string{"events"},
         }
     }),
-    pubsub.Module(),
+    kafka.Module(),
 )
 ```
 
@@ -580,7 +580,7 @@ quiqupgo/
 ├── logger/           # Structured logging module
 ├── temporal/         # Temporal workflow client module
 ├── gormfx/           # GORM database module
-├── pubsub/           # Kafka/PubSub messaging module
+├── kafka/           # Kafka messaging module
 ├── middleware/       # HTTP middleware
 ├── fxutil/           # Shared utilities
 ├── examples/         # Example applications

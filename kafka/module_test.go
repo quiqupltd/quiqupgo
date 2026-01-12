@@ -1,12 +1,12 @@
-package pubsub_test
+package kafka_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/quiqupltd/quiqupgo/pubsub"
-	"github.com/quiqupltd/quiqupgo/pubsub/testutil"
+	"github.com/quiqupltd/quiqupgo/kafka"
+	"github.com/quiqupltd/quiqupgo/kafka/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
@@ -14,7 +14,7 @@ import (
 
 func TestStandardConfig(t *testing.T) {
 	enableTracing := true
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:         []string{"kafka1:9092", "kafka2:9092"},
 		ConsumerGroup:   "my-group",
 		ProducerTimeout: 5 * time.Second,
@@ -46,7 +46,7 @@ func TestStandardConfig(t *testing.T) {
 }
 
 func TestStandardConfig_Defaults(t *testing.T) {
-	cfg := &pubsub.StandardConfig{}
+	cfg := &kafka.StandardConfig{}
 
 	assert.Equal(t, []string{"localhost:9092"}, cfg.GetBrokers())
 	assert.Equal(t, "default", cfg.GetConsumerGroup())
@@ -66,7 +66,7 @@ func TestStandardConfig_Defaults(t *testing.T) {
 
 func TestStandardConfig_TracingDisabled(t *testing.T) {
 	enableTracing := false
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		EnableTracing: &enableTracing,
 	}
 
@@ -85,8 +85,8 @@ func TestNoopConfig(t *testing.T) {
 	assert.False(t, cfg.GetSASLEnabled())
 }
 
-func TestInMemoryPubSub_PublishAndGet(t *testing.T) {
-	ps := testutil.NewInMemoryPubSub()
+func TestInMemoryKafka_PublishAndGet(t *testing.T) {
+	ps := testutil.NewInMemoryKafka()
 
 	ctx := context.Background()
 	err := ps.Publish(ctx, "test-topic", []byte("key1"), []byte("value1"))
@@ -103,11 +103,11 @@ func TestInMemoryPubSub_PublishAndGet(t *testing.T) {
 	assert.Equal(t, []byte("value2"), messages[1].Value)
 }
 
-func TestInMemoryPubSub_PublishBatch(t *testing.T) {
-	ps := testutil.NewInMemoryPubSub()
+func TestInMemoryKafka_PublishBatch(t *testing.T) {
+	ps := testutil.NewInMemoryKafka()
 
 	ctx := context.Background()
-	messages := []pubsub.Message{
+	messages := []kafka.Message{
 		{Key: []byte("k1"), Value: []byte("v1")},
 		{Key: []byte("k2"), Value: []byte("v2")},
 		{Key: []byte("k3"), Value: []byte("v3")},
@@ -120,18 +120,18 @@ func TestInMemoryPubSub_PublishBatch(t *testing.T) {
 	require.Len(t, stored, 3)
 }
 
-func TestInMemoryPubSub_Subscribe(t *testing.T) {
-	ps := testutil.NewInMemoryPubSub()
+func TestInMemoryKafka_Subscribe(t *testing.T) {
+	ps := testutil.NewInMemoryKafka()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	received := make([]pubsub.ConsumerMessage, 0)
+	received := make([]kafka.ConsumerMessage, 0)
 	done := make(chan struct{})
 
 	go func() {
 		defer close(done)
-		_ = ps.Subscribe(ctx, []string{"sub-topic"}, func(ctx context.Context, msg pubsub.ConsumerMessage) error {
+		_ = ps.Subscribe(ctx, []string{"sub-topic"}, func(ctx context.Context, msg kafka.ConsumerMessage) error {
 			received = append(received, msg)
 			return nil
 		})
@@ -151,8 +151,8 @@ func TestInMemoryPubSub_Subscribe(t *testing.T) {
 	assert.GreaterOrEqual(t, len(received), 0)
 }
 
-func TestInMemoryPubSub_Clear(t *testing.T) {
-	ps := testutil.NewInMemoryPubSub()
+func TestInMemoryKafka_Clear(t *testing.T) {
+	ps := testutil.NewInMemoryKafka()
 
 	ctx := context.Background()
 	_ = ps.Publish(ctx, "topic1", []byte("k"), []byte("v"))
@@ -168,8 +168,8 @@ func TestInMemoryPubSub_Clear(t *testing.T) {
 }
 
 func TestTestModule(t *testing.T) {
-	var producer pubsub.Producer
-	var consumer pubsub.Consumer
+	var producer kafka.Producer
+	var consumer kafka.Consumer
 
 	app := fx.New(
 		fx.NopLogger,
@@ -182,16 +182,16 @@ func TestTestModule(t *testing.T) {
 	require.NotNil(t, consumer)
 
 	// Verify they're the same instance
-	inMemProducer, ok := producer.(*testutil.InMemoryPubSub)
+	inMemProducer, ok := producer.(*testutil.InMemoryKafka)
 	require.True(t, ok)
-	inMemConsumer, ok := consumer.(*testutil.InMemoryPubSub)
+	inMemConsumer, ok := consumer.(*testutil.InMemoryKafka)
 	require.True(t, ok)
 	assert.Equal(t, inMemProducer, inMemConsumer)
 }
 
 // TestNewProducerWithTLS_InvalidCert tests producer creation with invalid TLS config
 func TestNewProducerWithTLS_InvalidCert(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:    []string{"localhost:9092"},
 		TLSEnabled: true,
 		TLSCert:    "-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----",
@@ -199,27 +199,27 @@ func TestNewProducerWithTLS_InvalidCert(t *testing.T) {
 	}
 
 	// This should fail because the cert/key are invalid
-	_, err := pubsub.NewProducer(cfg, nil, nil)
+	_, err := kafka.NewProducer(cfg, nil, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to build TLS config")
 }
 
 // TestNewProducerWithTLS_CAOnly tests producer creation with just CA cert (no client certs)
 func TestNewProducerWithTLS_CAOnly(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:    []string{"localhost:9092"},
 		TLSEnabled: true,
 		// No client cert/key, just enabling TLS
 	}
 
-	producer, err := pubsub.NewProducer(cfg, nil, nil)
+	producer, err := kafka.NewProducer(cfg, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, producer)
 }
 
 // TestNewProducerWithSASL_Plain tests producer with SASL PLAIN
 func TestNewProducerWithSASL_Plain(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		SASLEnabled:   true,
 		SASLMechanism: "PLAIN",
@@ -227,14 +227,14 @@ func TestNewProducerWithSASL_Plain(t *testing.T) {
 		SASLPassword:  "pass",
 	}
 
-	producer, err := pubsub.NewProducer(cfg, nil, nil)
+	producer, err := kafka.NewProducer(cfg, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, producer)
 }
 
 // TestNewProducerWithSASL_SCRAM256 tests producer with SCRAM-SHA-256
 func TestNewProducerWithSASL_SCRAM256(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		SASLEnabled:   true,
 		SASLMechanism: "SCRAM-SHA-256",
@@ -242,14 +242,14 @@ func TestNewProducerWithSASL_SCRAM256(t *testing.T) {
 		SASLPassword:  "pass",
 	}
 
-	producer, err := pubsub.NewProducer(cfg, nil, nil)
+	producer, err := kafka.NewProducer(cfg, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, producer)
 }
 
 // TestNewProducerWithSASL_SCRAM512 tests producer with SCRAM-SHA-512
 func TestNewProducerWithSASL_SCRAM512(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		SASLEnabled:   true,
 		SASLMechanism: "SCRAM-SHA-512",
@@ -257,14 +257,14 @@ func TestNewProducerWithSASL_SCRAM512(t *testing.T) {
 		SASLPassword:  "pass",
 	}
 
-	producer, err := pubsub.NewProducer(cfg, nil, nil)
+	producer, err := kafka.NewProducer(cfg, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, producer)
 }
 
 // TestNewProducerWithSASL_Unsupported tests producer with unsupported SASL mechanism
 func TestNewProducerWithSASL_Unsupported(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		SASLEnabled:   true,
 		SASLMechanism: "UNSUPPORTED",
@@ -272,30 +272,30 @@ func TestNewProducerWithSASL_Unsupported(t *testing.T) {
 		SASLPassword:  "pass",
 	}
 
-	_, err := pubsub.NewProducer(cfg, nil, nil)
+	_, err := kafka.NewProducer(cfg, nil, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported SASL mechanism")
 }
 
 // TestNewConsumer tests consumer creation
 func TestNewConsumer(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		ConsumerGroup: "test-group",
 	}
 
-	consumer, err := pubsub.NewConsumer(cfg, nil, nil)
+	consumer, err := kafka.NewConsumer(cfg, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, consumer)
 }
 
 // TestProducerClose tests producer close
 func TestProducerClose(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers: []string{"localhost:9092"},
 	}
 
-	producer, err := pubsub.NewProducer(cfg, nil, nil)
+	producer, err := kafka.NewProducer(cfg, nil, nil)
 	require.NoError(t, err)
 
 	err = producer.Close()
@@ -304,34 +304,34 @@ func TestProducerClose(t *testing.T) {
 
 // TestNewProducerWithTLS_InvalidCA tests producer creation with invalid CA cert
 func TestNewProducerWithTLS_InvalidCA(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:    []string{"localhost:9092"},
 		TLSEnabled: true,
 		TLSCA:      "invalid-ca-data",
 	}
 
-	_, err := pubsub.NewProducer(cfg, nil, nil)
+	_, err := kafka.NewProducer(cfg, nil, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse CA certificate")
 }
 
 // TestNewConsumerWithTLS tests consumer creation with TLS config
 func TestNewConsumerWithTLS(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		ConsumerGroup: "test-group",
 		TLSEnabled:    true,
 		// No client cert/key, just enabling TLS
 	}
 
-	consumer, err := pubsub.NewConsumer(cfg, nil, nil)
+	consumer, err := kafka.NewConsumer(cfg, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, consumer)
 }
 
 // TestNewConsumerWithSASL tests consumer creation with SASL config
 func TestNewConsumerWithSASL(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		ConsumerGroup: "test-group",
 		SASLEnabled:   true,
@@ -340,14 +340,14 @@ func TestNewConsumerWithSASL(t *testing.T) {
 		SASLPassword:  "pass",
 	}
 
-	consumer, err := pubsub.NewConsumer(cfg, nil, nil)
+	consumer, err := kafka.NewConsumer(cfg, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, consumer)
 }
 
 // TestNewConsumerWithTLSAndSASL tests consumer creation with both TLS and SASL config
 func TestNewConsumerWithTLSAndSASL(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		ConsumerGroup: "test-group",
 		TLSEnabled:    true,
@@ -358,19 +358,19 @@ func TestNewConsumerWithTLSAndSASL(t *testing.T) {
 	}
 
 	// Consumer creation succeeds - TLS/SASL validation happens at Subscribe time
-	consumer, err := pubsub.NewConsumer(cfg, nil, nil)
+	consumer, err := kafka.NewConsumer(cfg, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, consumer)
 }
 
 // TestConsumerClose tests consumer close
 func TestConsumerClose(t *testing.T) {
-	cfg := &pubsub.StandardConfig{
+	cfg := &kafka.StandardConfig{
 		Brokers:       []string{"localhost:9092"},
 		ConsumerGroup: "test-group",
 	}
 
-	consumer, err := pubsub.NewConsumer(cfg, nil, nil)
+	consumer, err := kafka.NewConsumer(cfg, nil, nil)
 	require.NoError(t, err)
 
 	err = consumer.Close()
@@ -379,8 +379,8 @@ func TestConsumerClose(t *testing.T) {
 
 // TestModuleWithTestUtil tests that the fx module can be constructed with testutil
 func TestModuleWithTestUtil(t *testing.T) {
-	var producer pubsub.Producer
-	var consumer pubsub.Consumer
+	var producer kafka.Producer
+	var consumer kafka.Consumer
 
 	app := fx.New(
 		fx.NopLogger,
@@ -397,8 +397,8 @@ func TestModuleWithTestUtil(t *testing.T) {
 	err := producer.Publish(ctx, "test-topic", []byte("key"), []byte("value"))
 	require.NoError(t, err)
 
-	// Get the in-memory pubsub and verify the message
-	inMem, ok := producer.(*testutil.InMemoryPubSub)
+	// Get the in-memory kafka and verify the message
+	inMem, ok := producer.(*testutil.InMemoryKafka)
 	require.True(t, ok)
 	messages := inMem.GetMessages("test-topic")
 	require.Len(t, messages, 1)
@@ -407,8 +407,8 @@ func TestModuleWithTestUtil(t *testing.T) {
 }
 
 // Ensure the config interface is satisfied
-var _ pubsub.Config = (*pubsub.StandardConfig)(nil)
-var _ pubsub.Config = (*testutil.NoopConfig)(nil)
+var _ kafka.Config = (*kafka.StandardConfig)(nil)
+var _ kafka.Config = (*testutil.NoopConfig)(nil)
 
 // Note: Integration tests for the actual Kafka producer/consumer would require
 // a running Kafka cluster and are better suited for integration test suites.
@@ -419,19 +419,19 @@ var _ pubsub.Config = (*testutil.NoopConfig)(nil)
 //         t.Skip("skipping integration test")
 //     }
 //
-//     var producer pubsub.Producer
-//     var consumer pubsub.Consumer
+//     var producer kafka.Producer
+//     var consumer kafka.Consumer
 //     app := fx.New(
 //         fx.NopLogger,
 //         tracing.NoopModule(),
 //         logger.NoopModule(),
-//         fx.Provide(func() pubsub.Config {
-//             return &pubsub.StandardConfig{
+//         fx.Provide(func() kafka.Config {
+//             return &kafka.StandardConfig{
 //                 Brokers:       []string{"localhost:9092"},
 //                 ConsumerGroup: "test-group",
 //             }
 //         }),
-//         pubsub.Module(),
+//         kafka.Module(),
 //         fx.Populate(&producer, &consumer),
 //     )
 //     // ... test with actual Kafka cluster

@@ -1,4 +1,4 @@
-package pubsub
+package kafka
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 // Module returns an fx.Option that provides Kafka producer and consumer.
 //
 // It provides:
-//   - pubsub.Producer (Kafka producer with optional OTEL tracing)
-//   - pubsub.Consumer (Kafka consumer with optional OTEL tracing)
+//   - kafka.Producer (Kafka producer with optional OTEL tracing)
+//   - kafka.Consumer (Kafka consumer with optional OTEL tracing)
 //
 // It requires:
-//   - pubsub.Config (must be provided by the application)
+//   - kafka.Config (must be provided by the application)
 //   - trace.Tracer (from tracing module)
 //   - *zap.Logger (from logger module)
 func Module(opts ...ModuleOption) fx.Option {
@@ -24,7 +24,7 @@ func Module(opts ...ModuleOption) fx.Option {
 		opt(options)
 	}
 
-	return fx.Module("pubsub",
+	return fx.Module("kafka",
 		fx.Supply(options),
 		fx.Provide(
 			provideProducer,
@@ -36,12 +36,12 @@ func Module(opts ...ModuleOption) fx.Option {
 
 // provideProducer creates a Kafka producer.
 func provideProducer(cfg Config, tracer trace.Tracer, logger *zap.Logger) (Producer, error) {
-	return NewProducer(cfg, tracer, logger.Named("pubsub.producer"))
+	return NewProducer(cfg, tracer, logger.Named("kafka.producer"))
 }
 
 // provideConsumer creates a Kafka consumer.
 func provideConsumer(cfg Config, tracer trace.Tracer, logger *zap.Logger) (Consumer, error) {
-	return NewConsumer(cfg, tracer, logger.Named("pubsub.consumer"))
+	return NewConsumer(cfg, tracer, logger.Named("kafka.consumer"))
 }
 
 // registerLifecycleHooks registers shutdown hooks for graceful cleanup.
@@ -56,7 +56,7 @@ func registerLifecycleHooks(lc fx.Lifecycle, producer Producer, consumer Consume
 	})
 }
 
-// moduleOptions holds the configurable options for the pubsub module.
+// moduleOptions holds the configurable options for the kafka module.
 type moduleOptions struct {
 	// Currently no options, but kept for future extensibility
 }
@@ -66,5 +66,5 @@ func defaultModuleOptions() *moduleOptions {
 	return &moduleOptions{}
 }
 
-// ModuleOption is a functional option for configuring the pubsub module.
+// ModuleOption is a functional option for configuring the kafka module.
 type ModuleOption func(*moduleOptions)
