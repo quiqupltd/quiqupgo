@@ -20,7 +20,9 @@ var (
 // GetLoggerProvider returns a LoggerProvider for the given configuration.
 // It caches providers by service name to avoid creating duplicates.
 // If OTLP endpoint is not configured, returns nil (no-op logging).
-func GetLoggerProvider(ctx context.Context, cfg Config, opts *moduleOptions) (*sdklog.LoggerProvider, error) {
+//
+// Options can be passed to customize the provider.
+func GetLoggerProvider(ctx context.Context, cfg Config, opts ...ModuleOption) (*sdklog.LoggerProvider, error) {
 	serviceName := cfg.GetServiceName()
 
 	// Check cache first
@@ -31,8 +33,16 @@ func GetLoggerProvider(ctx context.Context, cfg Config, opts *moduleOptions) (*s
 	}
 	loggerProvidersMu.Unlock()
 
+	// Build options
+	options := defaultModuleOptions()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(options)
+		}
+	}
+
 	// Create new provider
-	lp, err := createLoggerProvider(ctx, cfg, opts)
+	lp, err := createLoggerProvider(ctx, cfg, options)
 	if err != nil {
 		return nil, err
 	}

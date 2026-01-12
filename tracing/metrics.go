@@ -21,7 +21,9 @@ var (
 // GetMeterProvider returns a MeterProvider for the given configuration.
 // It caches providers by service name to avoid creating duplicates.
 // If OTLP endpoint is not configured, returns nil (no-op metrics).
-func GetMeterProvider(ctx context.Context, cfg Config, opts *moduleOptions) (*sdkmetric.MeterProvider, error) {
+//
+// Options can be passed to customize the provider (e.g., WithMetricInterval).
+func GetMeterProvider(ctx context.Context, cfg Config, opts ...ModuleOption) (*sdkmetric.MeterProvider, error) {
 	serviceName := cfg.GetServiceName()
 
 	// Check cache first
@@ -32,8 +34,16 @@ func GetMeterProvider(ctx context.Context, cfg Config, opts *moduleOptions) (*sd
 	}
 	meterProvidersMu.Unlock()
 
+	// Build options
+	options := defaultModuleOptions()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(options)
+		}
+	}
+
 	// Create new provider
-	mp, err := createMeterProvider(ctx, cfg, opts)
+	mp, err := createMeterProvider(ctx, cfg, options)
 	if err != nil {
 		return nil, err
 	}

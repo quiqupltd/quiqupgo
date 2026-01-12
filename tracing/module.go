@@ -20,6 +20,9 @@ type TracingModule struct {
 	Meter          metric.Meter
 }
 
+// moduleOptionSlice is a wrapper to allow fx.Supply of []ModuleOption.
+type moduleOptionSlice []ModuleOption
+
 // Module returns an fx.Option that provides OpenTelemetry tracing and metrics.
 //
 // It provides:
@@ -31,13 +34,8 @@ type TracingModule struct {
 // It requires:
 //   - tracing.Config (must be provided by the application)
 func Module(opts ...ModuleOption) fx.Option {
-	options := defaultModuleOptions()
-	for _, opt := range opts {
-		opt(options)
-	}
-
 	return fx.Module("tracing",
-		fx.Supply(options),
+		fx.Supply(moduleOptionSlice(opts)),
 		fx.Provide(
 			newTracingModule,
 			provideTracerProvider,
@@ -50,17 +48,17 @@ func Module(opts ...ModuleOption) fx.Option {
 }
 
 // newTracingModule creates the TracingModule with all components.
-func newTracingModule(lc fx.Lifecycle, cfg Config, opts *moduleOptions) (*TracingModule, error) {
+func newTracingModule(lc fx.Lifecycle, cfg Config, opts moduleOptionSlice) (*TracingModule, error) {
 	ctx := context.Background()
 
 	// Create TracerProvider
-	tp, err := GetTracerProvider(ctx, cfg, opts)
+	tp, err := GetTracerProvider(ctx, cfg, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create MeterProvider
-	mp, err := GetMeterProvider(ctx, cfg, opts)
+	mp, err := GetMeterProvider(ctx, cfg, opts...)
 	if err != nil {
 		return nil, err
 	}
