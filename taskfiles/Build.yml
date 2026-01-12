@@ -1,0 +1,14 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Build all packages
+    cmds:
+      - go build ./...
+
+  examples:
+    desc: Build all examples
+    cmds:
+      - go build -o /dev/null ./examples/minimal
+      - go build -o /dev/null ./examples/api-service
+      - go build -o /dev/null ./examples/worker-service

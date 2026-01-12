@@ -1,0 +1,66 @@
+version: '3'
+
+tasks:
+  install:
+    desc: Install required development tools
+    cmds:
+      - go install tool
+      - go install golang.org/x/tools/cmd/goimports@latest
+      - go install golang.org/x/tools/cmd/godoc@latest
+
+  lint:
+    desc: Run linters
+    cmds:
+      - go tool golangci-lint run ./...
+
+  lint-fix:
+    desc: Run linters with auto-fix
+    cmds:
+      - go tool golangci-lint run --fix ./...
+
+  fmt:
+    desc: Format code
+    cmds:
+      - go fmt ./...
+      - goimports -w .
+
+  tidy:
+    desc: Tidy dependencies
+    cmds:
+      - go mod tidy
+
+  docs:
+    desc: Serve godoc documentation locally
+    cmds:
+      - echo "Starting godoc server at http://localhost:6060/pkg/github.com/quiqupltd/quiqupgo/"
+      - godoc -http=:6060
+
+  hooks:
+    desc: Install git pre-commit hook for linting
+    cmds:
+      - |
+        cat > .git/hooks/pre-commit << 'HOOK'
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        echo "Running pre-commit checks..."
+
+        # Get staged Go files
+        STAGED_GO_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$' || true)
+
+        if [[ -z "${STAGED_GO_FILES}" ]]; then
+            echo "No Go files staged, skipping lint."
+            exit 0
+        fi
+
+        echo "Running golangci-lint..."
+        if ! go tool golangci-lint run --new-from-rev=HEAD~1 ./...; then
+            echo "Linting failed! Fix issues before committing."
+            echo "Tip: Run 'task tools:lint-fix' to auto-fix some issues."
+            exit 1
+        fi
+
+        echo "All checks passed!"
+        HOOK
+      - chmod +x .git/hooks/pre-commit
+      - echo "Pre-commit hook installed successfully!"

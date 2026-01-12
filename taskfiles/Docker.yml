@@ -1,0 +1,44 @@
+version: '3'
+
+tasks:
+  up:
+    desc: Start integration test services
+    cmds:
+      - docker compose up -d
+      - docker compose ps
+
+  down:
+    desc: Stop integration test services
+    cmds:
+      - docker compose down -v
+
+  logs:
+    desc: Show logs from all services
+    cmds:
+      - docker compose logs -f
+
+  ps:
+    desc: Show running services
+    cmds:
+      - docker compose ps
+
+  status:
+    desc: Wait for all services to be healthy
+    cmds:
+      - echo "Waiting for services to be ready..."
+      - |
+        timeout=120
+        elapsed=0
+        while [ $elapsed -lt $timeout ]; do
+          healthy=$(docker compose ps --format json | grep -c '"Health":"healthy"' || echo "0")
+          total=$(docker compose ps --format json | wc -l | tr -d ' ')
+          echo "Healthy: $healthy / $total"
+          if [ "$healthy" -ge 4 ]; then
+            echo "Core services are healthy!"
+            exit 0
+          fi
+          sleep 5
+          elapsed=$((elapsed + 5))
+        done
+        echo "Timeout waiting for services"
+        exit 1

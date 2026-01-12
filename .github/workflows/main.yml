@@ -1,0 +1,112 @@
+name: Main
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (Go ${{ matrix.go-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ["1.24", "1.25"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run tests
+        run: go test -race -v ./...
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redpanda:
+        image: docker.redpanda.com/redpandadata/redpanda:v24.2.14
+        ports:
+          - 9092:9092
+        options: >-
+          --health-cmd "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      otel-collector:
+        image: otel/opentelemetry-collector-contrib:0.96.0
+        ports:
+          - 4317:4317
+          - 4318:4318
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Wait for Temporal
+        run: |
+          # Start Temporal in the background (uses postgres service)
+          docker run -d --name temporal \
+            --network ${{ job.services.postgres.network }} \
+            -e DB=postgres12 \
+            -e DB_PORT=5432 \
+            -e POSTGRES_USER=test \
+            -e POSTGRES_PWD=test \
+            -e POSTGRES_SEEDS=postgres \
+            -p 7233:7233 \
+            temporalio/auto-setup:1.25.2
+
+          # Wait for Temporal to be ready
+          echo "Waiting for Temporal to be ready..."
+          for i in {1..60}; do
+            if docker exec temporal temporal operator cluster health 2>/dev/null | grep -q SERVING; then
+              echo "Temporal is ready!"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 5
+          done
+
+      - name: Run tests with coverage
+        env:
+          TEMPORAL_HOST: localhost:7233
+          KAFKA_BROKERS: localhost:9092
+          OTEL_EXPORTER_OTLP_ENDPOINT: localhost:4318
+        run: go test -tags=integration -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Check coverage threshold
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          config: ./.testcoverage.yml
+          cdn-secret: ${{ secrets.BADGES_CDN_SECRET }}
+          cdn-key: ${{ secrets.BADGES_CDN_KEY }}
+          cdn-region: europe-west1
+          cdn-endpoint: https://storage.googleapis.com/
+          cdn-file-name: coverbadges/${{ github.repository }}/coverage.svg
+          cdn-bucket-name: quiqup-public-assets
+          cdn-force-path-style: false
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f temporal || true
