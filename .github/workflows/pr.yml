@@ -2,19 +2,21 @@ name: Pull Request
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    concurrency:
+      group: ${{ github.ref_name }}-lint
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: useblacksmith/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
@@ -23,15 +25,17 @@ jobs:
 
   test:
     name: Test (Go ${{ matrix.go-version }})
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    concurrency:
+      group: ${{ github.ref_name }}-test-${{ matrix.go-version }}
+      cancel-in-progress: true
     strategy:
       matrix:
         go-version: ["1.24", "1.25"]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v5
+      - uses: useblacksmith/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -40,7 +44,11 @@ jobs:
 
   coverage:
     name: Coverage
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    concurrency:
+      group: ${{ github.ref_name }}-coverage
+      cancel-in-progress: true
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -75,10 +83,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: useblacksmith/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: go.mod
 
       - name: Start Temporal
         run: |
@@ -130,6 +137,15 @@ jobs:
         uses: vladopajic/go-test-coverage@v2
         with:
           config: ./.testcoverage.yml
+
+      - name: Generate coverage HTML
+        run: go tool cover -html=coverage.out -o=coverage.html
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.html
 
       - name: Cleanup
         if: always()
