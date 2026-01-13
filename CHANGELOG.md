@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-01-13
+
 ### Added
 
 - **Tracing Module**: `BaseService` embeddable struct for consistent service tracing
@@ -97,7 +99,8 @@ Initial public release of quiqupgo - a collection of reusable uber/fx modules fo
   - `CLAUDE.md` with project instructions for Claude Code
   - `.serena/` configuration for Serena IDE integration
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.0...v0.3.2
