@@ -177,7 +177,6 @@ func (s *TracingIntegrationSuite) TestLoggerProvider() {
 	}
 }
 
-
 func (s *TracingIntegrationSuite) TestGetResource() {
 	ctx := context.Background()
 	cfg := NewIntegrationTestConfig("resource-test-service")

@@ -24,11 +24,18 @@ func Module(opts ...ModuleOption) fx.Option {
 		opt(options)
 	}
 
-	return fx.Module("temporal",
+	fxOpts := []fx.Option{
 		fx.Supply(options),
 		fx.Provide(provideTemporalClient),
 		fx.Invoke(registerLifecycleHooks),
-	)
+	}
+
+	// Optionally provide worker interceptors for tracing
+	if options.provideWorkerInterceptors {
+		fxOpts = append(fxOpts, fx.Provide(provideWorkerInterceptors))
+	}
+
+	return fx.Module("temporal", fxOpts...)
 }
 
 // provideTemporalClient creates the Temporal client.
@@ -55,7 +62,8 @@ func registerLifecycleHooks(lc fx.Lifecycle, c client.Client) {
 
 // moduleOptions holds the configurable options for the temporal module.
 type moduleOptions struct {
-	// Currently no options, but kept for future extensibility
+	// provideWorkerInterceptors enables fx provision of worker interceptors.
+	provideWorkerInterceptors bool
 }
 
 // defaultModuleOptions returns the default module options.

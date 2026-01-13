@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Temporal Module**: Worker tracing support for OpenTelemetry instrumentation
+  - `WorkerInterceptors()` - Returns interceptors for `worker.Options.Interceptors`
+  - `ApplyWorkerInterceptors(&opts)` - Convenience function to apply to existing options
+  - `WorkerInterceptorsModule()` - Standalone fx module for worker interceptors
+  - `WithWorkerInterceptors()` - Module option to provide interceptors via fx DI
+  - `WorkerInterceptorSlice` - Injectable type for fx consumers
+  - Enables tracing of workflow and activity execution on workers (complements existing client-side tracing)
+
 ## [0.4.0] - 2026-01-13
 
 ### Added
