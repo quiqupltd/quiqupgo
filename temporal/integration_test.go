@@ -187,7 +187,7 @@ func (s *WorkerTracingIntegrationSuite) TestWorkerCreationWithInterceptors() {
 
 	// Start worker in background
 	go func() {
-		_ = w.Run(make(chan struct{}))
+		_ = w.Run(worker.InterruptCh())
 	}()
 
 	// Give it a moment to start
