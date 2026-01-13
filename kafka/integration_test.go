@@ -11,8 +11,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/quiqupltd/quiqupgo/fxutil"
-	"github.com/quiqupltd/quiqupgo/logger/testutil"
 	"github.com/quiqupltd/quiqupgo/kafka"
+	"github.com/quiqupltd/quiqupgo/logger/testutil"
 	tracingtest "github.com/quiqupltd/quiqupgo/tracing/testutil"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/fx"
@@ -345,4 +345,3 @@ func (s *TracingIntegrationSuite) TestConsumeWithTracing() {
 		s.Fail("timed out waiting for message")
 	}
 }
-

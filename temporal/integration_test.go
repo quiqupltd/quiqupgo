@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
+	"go.temporal.io/sdk/workflow"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -131,4 +133,85 @@ func (s *TemporalIntegrationSuite) TestWorkflowStatusHelpers() {
 	s.True(temporal.IsWorkflowCanceled(enums.WORKFLOW_EXECUTION_STATUS_CANCELED))
 	s.True(temporal.IsWorkflowTerminated(enums.WORKFLOW_EXECUTION_STATUS_TERMINATED))
 	s.True(temporal.IsWorkflowTimedOut(enums.WORKFLOW_EXECUTION_STATUS_TIMED_OUT))
+}
+
+// WorkerTracingIntegrationSuite tests worker creation with tracing interceptors.
+type WorkerTracingIntegrationSuite struct {
+	suite.Suite
+	client       client.Client
+	interceptors temporal.WorkerInterceptorSlice
+	app          *fxtest.App
+}
+
+func TestWorkerTracingIntegrationSuite(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	suite.Run(t, new(WorkerTracingIntegrationSuite))
+}
+
+func (s *WorkerTracingIntegrationSuite) SetupTest() {
+	cfg := NewIntegrationTestConfig()
+
+	s.app = fxutil.TestApp(s.T(),
+		fx.Module("worker-tracing-test",
+			tracingtest.NoopModule(),
+			loggertest.NoopModule(),
+			fx.Provide(func() temporal.Config { return cfg }),
+			temporal.Module(temporal.WithWorkerInterceptors()),
+		),
+		fx.Populate(&s.client, &s.interceptors),
+	)
+	s.app.RequireStart()
+}
+
+func (s *WorkerTracingIntegrationSuite) TearDownTest() {
+	s.app.RequireStop()
+}
+
+func (s *WorkerTracingIntegrationSuite) TestWorkerInterceptorsProvided() {
+	// Verify interceptors were provided via fx
+	s.NotNil(s.interceptors)
+	s.Len(s.interceptors, 1)
+}
+
+func (s *WorkerTracingIntegrationSuite) TestWorkerCreationWithInterceptors() {
+	// Create a worker with tracing interceptors
+	w := worker.New(s.client, "worker-tracing-test-queue", worker.Options{
+		Interceptors: s.interceptors,
+	})
+	s.NotNil(w)
+
+	// Register a simple workflow to verify the worker is functional
+	w.RegisterWorkflow(testTracingWorkflow)
+
+	// Start worker in background
+	go func() {
+		_ = w.Run(make(chan struct{}))
+	}()
+
+	// Give it a moment to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Stop the worker
+	w.Stop()
+}
+
+func (s *WorkerTracingIntegrationSuite) TestApplyWorkerInterceptors() {
+	// Test using ApplyWorkerInterceptors helper
+	opts := worker.Options{
+		MaxConcurrentActivityExecutionSize: 50,
+	}
+	err := temporal.ApplyWorkerInterceptors(&opts)
+	s.Require().NoError(err)
+	s.Len(opts.Interceptors, 1)
+
+	// Create worker with applied options
+	w := worker.New(s.client, "apply-interceptors-test-queue", opts)
+	s.NotNil(w)
+}
+
+// testTracingWorkflow is a simple workflow for testing worker creation.
+func testTracingWorkflow(ctx workflow.Context) (string, error) {
+	return "done", nil
 }

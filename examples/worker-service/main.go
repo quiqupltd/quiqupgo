@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/quiqupltd/quiqupgo/logger"
 	"github.com/quiqupltd/quiqupgo/kafka"
+	"github.com/quiqupltd/quiqupgo/logger"
 	"github.com/quiqupltd/quiqupgo/temporal"
 	"github.com/quiqupltd/quiqupgo/tracing"
 	"go.temporal.io/sdk/client"
