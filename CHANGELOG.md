@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Tracing Module**: `BaseService` embeddable struct for consistent service tracing
+  - `Trace(ctx, name)` - Creates spans with automatic component name prefixing and proper error capture
+  - `WithSpan(ctx, name, fn)` - Callback pattern for simpler tracing without named returns
+  - `WithSpanResult[T](ctx, svc, name, fn)` - Generic helper for functions returning values
+  - Automatic error recording and span status setting
+  - See `tracing/doc.go` for comprehensive usage examples
+
 ## [0.3.4] - 2026-01-13
 
 ### Fixed
