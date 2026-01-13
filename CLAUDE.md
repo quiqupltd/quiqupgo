@@ -81,6 +81,7 @@ temporaltest.MockModule()  // Mock temporal client
 
 - **Feature branches** (`feat/*`): Update `CHANGELOG.md` under the `[Unreleased]` section before merging.
 - **Release branches** (`rel/*`): Promote `[Unreleased]` changes in `CHANGELOG.md` to a versioned section (e.g., `[v1.2.0]`) before closing.
+- **Merge method**: Always use `rebase` when merging PRs.
 
 ## Code Style
 
