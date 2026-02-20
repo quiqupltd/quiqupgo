@@ -72,6 +72,7 @@ func TestWorkerInterceptors_WithWorkerNew(t *testing.T) {
 		&StandardConfig{HostPort: "localhost:7233", Namespace: "default"},
 		logger,
 		nil, // no tracer
+		nil, // no meter
 	)
 	if err != nil {
 		t.Skip("skipping test - cannot create client")
@@ -96,7 +97,8 @@ func TestApplyWorkerInterceptors_WithWorkerNew(t *testing.T) {
 		t.Context(),
 		&StandardConfig{HostPort: "localhost:7233", Namespace: "default"},
 		logger,
-		nil,
+		nil, // no tracer
+		nil, // no meter
 	)
 	if err != nil {
 		t.Skip("skipping test - cannot create client")

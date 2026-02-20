@@ -208,3 +208,124 @@ func (s *WorkerTracingIntegrationSuite) TestApplyWorkerInterceptors() {
 func testTracingWorkflow(ctx workflow.Context) (string, error) {
 	return "done", nil
 }
+
+// LocalClientIntegrationSuite tests the local Temporal client against a real server.
+type LocalClientIntegrationSuite struct {
+	suite.Suite
+	localClient client.Client
+	app         *fxtest.App
+}
+
+func TestLocalClientIntegrationSuite(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	suite.Run(t, new(LocalClientIntegrationSuite))
+}
+
+func (s *LocalClientIntegrationSuite) SetupTest() {
+	cfg := NewIntegrationTestConfig()
+
+	type localClientParam struct {
+		fx.In
+		Client client.Client `name:"temporallocal"`
+	}
+
+	var result localClientParam
+
+	s.app = fxutil.TestApp(s.T(),
+		tracingtest.NoopModule(),
+		loggertest.NoopModule(),
+		fx.Provide(func() temporal.LocalConfig {
+			return &temporal.StandardLocalConfig{
+				HostPort:  cfg.hostPort,
+				Namespace: cfg.namespace,
+			}
+		}),
+		temporal.LocalModule(),
+		fx.Populate(&result),
+	)
+	s.app.RequireStart()
+	s.localClient = result.Client
+}
+
+func (s *LocalClientIntegrationSuite) TearDownTest() {
+	s.app.RequireStop()
+}
+
+func (s *LocalClientIntegrationSuite) TestLocalClientConnection() {
+	s.NotNil(s.localClient)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	workflows, err := temporal.ListAllWorkflows(ctx, s.localClient, "default", "")
+	s.Require().NoError(err)
+	s.GreaterOrEqual(len(workflows), 0)
+}
+
+// DualClientIntegrationSuite tests running both cloud and local clients simultaneously.
+type DualClientIntegrationSuite struct {
+	suite.Suite
+	cloudClient client.Client
+	localClient client.Client
+	app         *fxtest.App
+}
+
+func TestDualClientIntegrationSuite(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	suite.Run(t, new(DualClientIntegrationSuite))
+}
+
+func (s *DualClientIntegrationSuite) SetupTest() {
+	cfg := NewIntegrationTestConfig()
+
+	type dualClients struct {
+		fx.In
+		Cloud client.Client
+		Local client.Client `name:"temporallocal"`
+	}
+
+	var result dualClients
+
+	s.app = fxutil.TestApp(s.T(),
+		tracingtest.NoopModule(),
+		loggertest.NoopModule(),
+		fx.Provide(func() temporal.Config { return cfg }),
+		fx.Provide(func() temporal.LocalConfig {
+			return &temporal.StandardLocalConfig{
+				HostPort:  cfg.hostPort,
+				Namespace: cfg.namespace,
+			}
+		}),
+		temporal.Module(),
+		temporal.LocalModule(),
+		fx.Populate(&result),
+	)
+	s.app.RequireStart()
+	s.cloudClient = result.Cloud
+	s.localClient = result.Local
+}
+
+func (s *DualClientIntegrationSuite) TearDownTest() {
+	s.app.RequireStop()
+}
+
+func (s *DualClientIntegrationSuite) TestBothClientsWork() {
+	s.NotNil(s.cloudClient)
+	s.NotNil(s.localClient)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Both clients should be able to list workflows
+	cloudWorkflows, err := temporal.ListAllWorkflows(ctx, s.cloudClient, "default", "")
+	s.Require().NoError(err)
+	s.GreaterOrEqual(len(cloudWorkflows), 0)
+
+	localWorkflows, err := temporal.ListAllWorkflows(ctx, s.localClient, "default", "")
+	s.Require().NoError(err)
+	s.GreaterOrEqual(len(localWorkflows), 0)
+}

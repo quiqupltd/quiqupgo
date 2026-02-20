@@ -221,7 +221,7 @@ fx.New(
 
 ### Temporal Module
 
-Provides Temporal workflow client with OTEL tracing.
+Provides Temporal workflow client with OTEL tracing and metrics.
 
 ```go
 import "github.com/quiqupltd/quiqupgo/temporal"
@@ -240,6 +240,7 @@ type Config interface {
 // Dependencies (must be provided):
 // - *zap.Logger
 // - trace.Tracer
+// - metric.Meter
 
 // Usage
 fx.New(
@@ -252,6 +253,44 @@ fx.New(
     }),
     temporal.Module(),
 )
+```
+
+**Module Options:**
+- `temporal.WithLazyClient()` — use `NewLazyClient` instead of `Dial` (defers connection until first RPC)
+- `temporal.WithWorkerInterceptors()` — provide OTEL worker interceptors via fx
+
+**Metrics:** Automatically enabled when `metric.Meter` is available (from tracing module). Emits workflow latency, task queue depth, and other Temporal SDK metrics through OTel.
+
+#### Local Module
+
+`LocalModule()` provides a second `client.Client` tagged `name:"temporallocal"` for in-cluster Temporal (no TLS, lazy by default):
+
+```go
+// LocalConfig interface (no TLS fields)
+type LocalConfig interface {
+    GetHostPort() string
+    GetNamespace() string
+}
+
+// Dual-client pattern (cloud + local)
+fx.New(
+    tracing.Module(),
+    logger.Module(),
+    fx.Provide(func() temporal.Config { /* cloud config with TLS */ }),
+    fx.Provide(func() temporal.LocalConfig {
+        return &temporal.StandardLocalConfig{
+            HostPort: "temporal.local:7233",
+        }
+    }),
+    temporal.Module(),
+    temporal.LocalModule(),
+)
+
+// Inject the local client
+type MyWorker struct {
+    fx.In
+    LocalClient client.Client `name:"temporallocal"`
+}
 ```
 
 ### GORM Module
