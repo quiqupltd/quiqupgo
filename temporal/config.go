@@ -60,3 +60,38 @@ func (c *StandardConfig) IsLocal() bool {
 
 // Ensure StandardConfig implements Config.
 var _ Config = (*StandardConfig)(nil)
+
+// LocalConfig defines the configuration interface for a local (in-cluster) Temporal connection.
+// Unlike Config, it does not require TLS fields since local clusters typically don't need them.
+type LocalConfig interface {
+	// GetHostPort returns the Temporal server host:port (e.g., "localhost:7233").
+	GetHostPort() string
+
+	// GetNamespace returns the Temporal namespace to use.
+	GetNamespace() string
+}
+
+// StandardLocalConfig is the default implementation of LocalConfig.
+type StandardLocalConfig struct {
+	HostPort  string
+	Namespace string
+}
+
+// GetHostPort returns the Temporal host:port.
+func (c *StandardLocalConfig) GetHostPort() string {
+	if c.HostPort == "" {
+		return "localhost:7233"
+	}
+	return c.HostPort
+}
+
+// GetNamespace returns the Temporal namespace.
+func (c *StandardLocalConfig) GetNamespace() string {
+	if c.Namespace == "" {
+		return "default"
+	}
+	return c.Namespace
+}
+
+// Ensure StandardLocalConfig implements LocalConfig.
+var _ LocalConfig = (*StandardLocalConfig)(nil)
