@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-02-20
+
+### Added
+
+- **Temporal Module**: OpenTelemetry metrics support via `MetricsHandler`
+  - Automatically wires `metric.Meter` into the Temporal client when available
+  - Emits workflow latency, task queue depth, and other Temporal SDK metrics through OTel
+  - Optional — nil meter skips metrics handler (no breaking change)
+- **Temporal Module**: `WithLazyClient()` module option
+  - Uses `client.NewLazyClient` instead of `client.Dial` to defer connection until first RPC
+  - Useful when the Temporal server may not be available at startup
+- **Temporal Module**: `LocalModule()` for in-cluster Temporal connections
+  - Provides `client.Client` tagged `name:"temporallocal"` for GKE-based Temporal
+  - No TLS, lazy client by default, includes OTel tracing + metrics
+  - `LocalConfig` interface with just `GetHostPort()` + `GetNamespace()`
+  - `StandardLocalConfig` with sensible defaults
+  - Enables dual-client pattern (cloud + local) for gradual migration
+- **Temporal Testutil**: `NoopLocalModule()` and `NoopLocalConfig` for testing local client consumers
+
 ## [0.5.0] - 2026-01-13
 
 ### Added
@@ -111,7 +130,9 @@ Initial public release of quiqupgo - a collection of reusable uber/fx modules fo
   - `CLAUDE.md` with project instructions for Claude Code
   - `.serena/` configuration for Serena IDE integration
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/quiqupltd/quiqupgo/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/quiqupltd/quiqupgo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.2...v0.3.3
