@@ -153,7 +153,7 @@ func TestNewClient_WithInvalidTLS(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err := temporal.NewClient(ctx, cfg, zap.NewNop(), nil)
+	_, err := temporal.NewClient(ctx, cfg, zap.NewNop(), nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "TLS")
 }
@@ -168,7 +168,7 @@ func TestNewClient_LocalhostSkipsTLS(t *testing.T) {
 
 	ctx := context.Background()
 	// This will fail to connect but shouldn't fail on TLS
-	_, err := temporal.NewClient(ctx, cfg, zap.NewNop(), nil)
+	_, err := temporal.NewClient(ctx, cfg, zap.NewNop(), nil, nil)
 	// The error should be about connection, not TLS
 	if err != nil {
 		assert.NotContains(t, err.Error(), "TLS")
