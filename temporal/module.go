@@ -3,6 +3,7 @@ package temporal
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/client"
 	"go.uber.org/fx"
@@ -18,6 +19,7 @@ import (
 //   - temporal.Config (must be provided by the application)
 //   - *zap.Logger (from logger module)
 //   - trace.Tracer (from tracing module)
+//   - metric.Meter (from tracing module)
 func Module(opts ...ModuleOption) fx.Option {
 	options := defaultModuleOptions()
 	for _, opt := range opts {
@@ -44,10 +46,17 @@ func provideTemporalClient(
 	cfg Config,
 	logger *zap.Logger,
 	tracer trace.Tracer,
+	meter metric.Meter,
 	opts *moduleOptions,
 ) (client.Client, error) {
 	ctx := context.Background()
-	return NewClient(ctx, cfg, logger, tracer)
+	return newClient(ctx, ClientParams{
+		Config: cfg,
+		Logger: logger,
+		Tracer: tracer,
+		Meter:  meter,
+		Lazy:   opts.lazyClient,
+	})
 }
 
 // registerLifecycleHooks registers shutdown hooks for graceful cleanup.
@@ -64,6 +73,8 @@ func registerLifecycleHooks(lc fx.Lifecycle, c client.Client) {
 type moduleOptions struct {
 	// provideWorkerInterceptors enables fx provision of worker interceptors.
 	provideWorkerInterceptors bool
+	// lazyClient uses NewLazyClient instead of Dial (doesn't block startup).
+	lazyClient bool
 }
 
 // defaultModuleOptions returns the default module options.
@@ -73,3 +84,12 @@ func defaultModuleOptions() *moduleOptions {
 
 // ModuleOption is a functional option for configuring the temporal module.
 type ModuleOption func(*moduleOptions)
+
+// WithLazyClient configures the module to use client.NewLazyClient instead of
+// client.Dial. A lazy client does not eagerly connect to the Temporal server,
+// which is useful when the server may not be available at startup.
+func WithLazyClient() ModuleOption {
+	return func(o *moduleOptions) {
+		o.lazyClient = true
+	}
+}

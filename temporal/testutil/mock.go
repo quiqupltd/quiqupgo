@@ -3,6 +3,8 @@ package testutil
 
 import (
 	"github.com/quiqupltd/quiqupgo/temporal"
+	"go.temporal.io/sdk/client"
+	"go.uber.org/fx"
 )
 
 // NoopConfig is a test configuration for the temporal module.
@@ -26,6 +28,43 @@ func (c *NoopConfig) GetTLSKey() string    { return "" }
 
 // Ensure NoopConfig implements Config.
 var _ temporal.Config = (*NoopConfig)(nil)
+
+// NoopLocalConfig is a test configuration for the local temporal module.
+type NoopLocalConfig struct {
+	HostPort  string
+	Namespace string
+}
+
+// NewNoopLocalConfig creates a NoopLocalConfig with test defaults.
+func NewNoopLocalConfig() *NoopLocalConfig {
+	return &NoopLocalConfig{
+		HostPort:  "localhost:7233",
+		Namespace: "default",
+	}
+}
+
+func (c *NoopLocalConfig) GetHostPort() string  { return c.HostPort }
+func (c *NoopLocalConfig) GetNamespace() string { return c.Namespace }
+
+// Ensure NoopLocalConfig implements LocalConfig.
+var _ temporal.LocalConfig = (*NoopLocalConfig)(nil)
+
+// noopLocalClientResult provides a nil local client for testing.
+type noopLocalClientResult struct {
+	fx.Out
+	Client client.Client `name:"temporallocal"`
+}
+
+// NoopLocalModule provides a nil local Temporal client tagged with name:"temporallocal"
+// for testing. Use this when your code depends on a local client but you don't need
+// a real Temporal connection.
+func NoopLocalModule() fx.Option {
+	return fx.Module("temporal-local-test",
+		fx.Provide(func() noopLocalClientResult {
+			return noopLocalClientResult{Client: nil}
+		}),
+	)
+}
 
 // Note: For testing Temporal workflows and activities, use the testsuite package
 // from the Temporal SDK directly:
