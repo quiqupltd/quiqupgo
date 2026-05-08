@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-08
+
+### Added
+
+- **Temporal Module**: Worker startup retry with backoff and health status
+  - `StartWithRetry(ctx, worker, status, logger)` - Retries worker startup with exponential backoff (2s, 4s, 8s, 16s, 30s)
+  - `StartWithRetryBackoffs()` - Variant with custom backoff durations for testing
+  - `WorkerStatus` type with `IsReady()` / `SetReady()` for health check integration
+  - `Starter` interface - Accepts `worker.Worker` or any type with `Start() error`
+  - Returns error on exhaustion so fx aborts and K8s can restart the pod
+
 ## [0.6.0] - 2026-02-20
 
 ### Added
@@ -130,7 +141,8 @@ Initial public release of quiqupgo - a collection of reusable uber/fx modules fo
   - `CLAUDE.md` with project instructions for Claude Code
   - `.serena/` configuration for Serena IDE integration
 
-[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/quiqupltd/quiqupgo/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/quiqupltd/quiqupgo/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/quiqupltd/quiqupgo/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/quiqupltd/quiqupgo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/quiqupltd/quiqupgo/compare/v0.3.4...v0.4.0
