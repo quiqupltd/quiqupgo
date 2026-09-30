@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-30
+
 ### Added
 
 - **Tracing Module**: `service.instance.id` on the OpenTelemetry resource, so two
@@ -41,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stating which attributes become series labels and which do not. The example
   previously demonstrated a counter pattern that produces colliding series, with
   nothing to warn the reader.
+
+## [0.7.0] - 2026-05-08
+
+### Added
+
+- **Temporal Module**: Worker startup retry with backoff and health status
+  - `StartWithRetry(ctx, worker, status, logger)` - Retries worker startup with exponential backoff (2s, 4s, 8s, 16s, 30s)
+  - `StartWithRetryBackoffs()` - Variant with custom backoff durations for testing
+  - `WorkerStatus` type with `IsReady()` / `SetReady()` for health check integration
+  - `Starter` interface - Accepts `worker.Worker` or any type with `Start() error`
+  - Returns error on exhaustion so fx aborts and K8s can restart the pod
 
 ## [0.6.0] - 2026-02-20
 
