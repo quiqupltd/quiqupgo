@@ -87,7 +87,21 @@ jobs:
         run: go test -race -tags=integration -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Check coverage threshold
-        uses: vladopajic/go-test-coverage@v2
+        # Pinned, NOT @v2, and the pin is load-bearing. The badge upload targets
+        # Google Cloud Storage through its S3-interop endpoint, and newer AWS SDK
+        # versions send integrity checksums by default that GCS does not accept —
+        # the request then fails signature verification with
+        # `SignatureDoesNotMatch: Access denied`, which reads like an expired
+        # credential and is not one. Reproduced directly against the bucket on
+        # 2026-09-30: a PutObject with default checksums fails, and the identical
+        # request with `request_checksum_calculation=when_required` succeeds, on
+        # a freshly minted HMAC key.
+        #
+        # v2.18.8 (2026-05-04) is the last version this repo was green on
+        # (2026-05-07). Do not float this back to @v2 without re-testing the
+        # upload, and do not "fix" a failure here by rotating the CDN credentials
+        # — that was tried first and changed nothing.
+        uses: vladopajic/go-test-coverage@v2.18.8
         with:
           config: ./.testcoverage.yml
           cdn-secret: ${{ secrets.BADGES_CDN_SECRET }}
