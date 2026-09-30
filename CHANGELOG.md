@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Tracing Module**: `service.instance.id` on the OpenTelemetry resource, so two
+  replicas of one service no longer merge into a single metric series.
+
+  Taken from `POD_NAME` (downward API) when set, falling back to the hostname —
+  which in Kubernetes is already the pod name. No config change: adding a method
+  to the `Config` interface would have broken every implementer, and the pod
+  name belongs to the environment rather than to application config. An empty
+  value is never exported, because a label every replica shares looks like
+  identity while providing none.
+
+  Why it matters: metrics leave over OTLP, and on the Prometheus side an OTLP
+  *resource* attribute lands in `target_info` rather than on the series. Without
+  a per-instance identity, every replica writes into ONE series whose value
+  alternates between independent counters. Prometheus reads each drop as a
+  counter reset and counts the whole new value as an increase, so `rate()`
+  reports a figure unrelated to reality — and keeps reporting one even when
+  nothing is incrementing, which makes a dashboard lie rather than go blank.
+  Measured in production on 2026-09-30: one service's counter read ~405 req/sec
+  against real traffic of ~0.19 req/sec.
+
+  **This is necessary but not sufficient.** The ingest path must also promote the
+  attribute onto the series (Mimir's
+  `-distributor.otel-promote-resource-attributes`, or an Alloy transform).
+  Deploying this alone changes what is in `target_info` and nothing else, so it
+  should not be read as a fix on its own.
+
+### Changed
+
+- **Tracing Module**: `doc.go` now carries a caveat before its metrics example,
+  stating which attributes become series labels and which do not. The example
+  previously demonstrated a counter pattern that produces colliding series, with
+  nothing to warn the reader.
+
 ## [0.6.0] - 2026-02-20
 
 ### Added

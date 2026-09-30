@@ -6,7 +6,9 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	"os"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
@@ -20,11 +22,19 @@ func TracerName() string {
 // Note: We use specific process detectors instead of resource.WithProcess() to avoid
 // calling os/user.Current() which fails in minimal containers without CGO or $USER set.
 func GetResource(ctx context.Context, cfg Config) (*resource.Resource, error) {
+	attrs := []attribute.KeyValue{
+		semconv.ServiceName(cfg.GetServiceName()),
+		semconv.DeploymentEnvironment(cfg.GetEnvironmentName()),
+	}
+
+	// An empty instance id is worse than none: it exports a label every replica
+	// shares, which looks like identity while providing none.
+	if id := serviceInstanceID(); id != "" {
+		attrs = append(attrs, semconv.ServiceInstanceID(id))
+	}
+
 	return resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(cfg.GetServiceName()),
-			semconv.DeploymentEnvironment(cfg.GetEnvironmentName()),
-		),
+		resource.WithAttributes(attrs...),
 		resource.WithTelemetrySDK(),
 		resource.WithHost(),
 		// Use specific process detectors to avoid os/user.Current() dependency
@@ -35,6 +45,40 @@ func GetResource(ctx context.Context, cfg Config) (*resource.Resource, error) {
 		resource.WithProcessRuntimeVersion(),
 		resource.WithProcessRuntimeDescription(),
 	)
+}
+
+// serviceInstanceID identifies the individual process behind a service, which is
+// what keeps one replica's telemetry from being merged with another's.
+//
+// Why this matters more than it looks. Metrics leave here over OTLP, and on the
+// Prometheus side an OTLP *resource* attribute lands in `target_info`, not on
+// the series. Two replicas sharing a service name therefore write into ONE
+// series whose value alternates between two independent counters. Prometheus
+// reads each drop as a counter reset and counts the whole new value as an
+// increase, so rate() reports a figure with no relationship to reality — and
+// keeps reporting one even when nothing is incrementing at all, which is the
+// failure mode that makes a dashboard lie rather than merely go blank.
+//
+// Setting this is NECESSARY BUT NOT SUFFICIENT. The ingest path must also
+// promote the attribute onto the series (Mimir's
+// -distributor.otel-promote-resource-attributes, or an Alloy transform).
+// Without that half this changes what is in target_info and nothing else, so
+// do not read a deploy of this alone as a fix.
+//
+// POD_NAME is preferred because it is explicit, set from the downward API. The
+// fallback is correct in Kubernetes too, where the hostname is already the pod
+// name; outside Kubernetes it is the machine name, which is still the right
+// grain for "which process emitted this".
+func serviceInstanceID() string {
+	if pod := os.Getenv("POD_NAME"); pod != "" {
+		return pod
+	}
+
+	if host, err := os.Hostname(); err == nil {
+		return host
+	}
+
+	return ""
 }
 
 // GetTLSConfig creates a TLS configuration from base64-encoded certificates.

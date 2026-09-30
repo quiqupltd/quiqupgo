@@ -175,6 +175,54 @@ func TestGetResource(t *testing.T) {
 	assert.True(t, foundEnv, "deployment.environment attribute not found")
 }
 
+// service.instance.id is what stops two replicas of one service merging into a
+// single Prometheus series, so its absence is a silent data-corruption bug
+// rather than a missing nicety. See serviceInstanceID in common.go.
+func TestGetResource_SetsServiceInstanceID(t *testing.T) {
+	t.Setenv("POD_NAME", "my-service-6446495d5-7qgp5")
+
+	cfg := &tracing.StandardConfig{ServiceName: "test-service", EnvironmentName: "test-env"}
+
+	res, err := tracing.GetResource(context.Background(), cfg)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	var got string
+	for _, attr := range res.Attributes() {
+		if attr.Key == "service.instance.id" {
+			got = attr.Value.AsString()
+		}
+	}
+
+	assert.Equal(t, "my-service-6446495d5-7qgp5", got,
+		"service.instance.id must carry the pod name, or every replica shares one series")
+}
+
+// Outside Kubernetes, and in any pod without the downward API wired up, the
+// hostname is the right grain — and in Kubernetes it is already the pod name.
+// What must never happen is an EMPTY value: a label every replica shares looks
+// like identity while providing none.
+func TestGetResource_FallsBackToHostnameForInstanceID(t *testing.T) {
+	t.Setenv("POD_NAME", "")
+
+	cfg := &tracing.StandardConfig{ServiceName: "test-service", EnvironmentName: "test-env"}
+
+	res, err := tracing.GetResource(context.Background(), cfg)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	var found bool
+	for _, attr := range res.Attributes() {
+		if attr.Key == "service.instance.id" {
+			found = true
+			assert.NotEmpty(t, attr.Value.AsString(),
+				"an empty instance id is worse than none: it is a label every replica shares")
+		}
+	}
+
+	assert.True(t, found, "service.instance.id should still be set from the hostname")
+}
+
 func TestWithSampler(t *testing.T) {
 	tracing.ClearTracerProviderCache()
 	tracing.ClearMeterProviderCache()
