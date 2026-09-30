@@ -121,6 +121,26 @@
 //	    return svc, nil
 //	}
 //
+// # A caveat before you add a counter
+//
+// A metric declared through this package leaves over OTLP, and on the
+// Prometheus side an OTLP *resource* attribute (service.name,
+// deployment.environment, service.instance.id) lands in target_info rather
+// than on the series. Only the attributes you pass at the call site —
+// metric.WithAttributes(...) below — become series labels by themselves.
+//
+// The consequence is worth knowing before it bites: unless the ingest path
+// promotes the resource attributes onto the series, every replica of a service
+// writes into ONE series whose value alternates between independent counters.
+// Prometheus reads each drop as a counter reset and counts the whole new value
+// as an increase, so rate() reports a figure unrelated to reality — and keeps
+// reporting one even when nothing is incrementing, which makes a dashboard lie
+// rather than go blank.
+//
+// This package sets service.instance.id (see serviceInstanceID in common.go)
+// so the identity exists. Promoting it is the other half and lives in the
+// ingest configuration, not here.
+//
 // # Complete Example with fx
 //
 //	type GeocodingService struct {
